@@ -57,7 +57,7 @@ struct output_msg // msgq
 struct merge_msg // shm
 {
     bool _BACK_;
-    // struct table_elem mem_table[3]; // WHY ERROR
+    // struct table_elem mem_table[3];
 };
 #define MERGE_MSG_SIZE sizeof(struct merge_msg)
 
