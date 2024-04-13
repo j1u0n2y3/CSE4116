@@ -20,7 +20,7 @@ void main_process()
 
     struct table_elem mem_table[3];
     int table_order = 1;
-    int mem_table_cnt = 0;
+    int mem_table_cnt = 1;
 
     while (1)
     {

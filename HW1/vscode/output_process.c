@@ -30,4 +30,9 @@ void output_process()
 
 void output_reset()
 {
+    fnd_dd(0000);
+    led_mm(LED_BLANK);
+    dot_dd(DOT_BLANK);
+    lcd_dd(LCD_BLANK);
+    motor_dd(MOTOR_OFF);
 }
