@@ -35,4 +35,5 @@ void output_reset()
     dot_dd(DOT_BLANK);
     lcd_dd(LCD_BLANK);
     motor_dd(MOTOR_OFF);
+    // usleep(1000);
 }
