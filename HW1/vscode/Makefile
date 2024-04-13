@@ -36,3 +36,4 @@ push:
 	adb push $(TARGET) /data/local/tmp
 
 .PHONY: clean push
+

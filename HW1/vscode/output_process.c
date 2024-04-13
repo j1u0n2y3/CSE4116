@@ -21,6 +21,11 @@ void output_process()
         }
         if (output->_BACK_)
             break;
+        if (output->_RESET_)
+        {
+            output_reset();
+            continue;
+        }
     }
 
     output_reset();
@@ -32,8 +37,7 @@ void output_reset()
 {
     fnd_dd(0000);
     led_mm(LED_BLANK);
-    dot_dd(DOT_BLANK);
-    lcd_dd(LCD_BLANK);
+    lcd_dd(LCD_BLANK, LCD_BLANK);
     motor_dd(MOTOR_OFF);
     // usleep(1000);
 }

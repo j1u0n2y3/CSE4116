@@ -3,13 +3,8 @@
 
 #include "main.h"
 
-#define MODE_NUM 3
-#define PUT_MODE 0
-#define GET_MODE 1
-#define MERGE_MODE 2
-#define MODE_UP(mod) mod = (mod + 1) % MODE_NUM
-#define MODE_DOWN(mod) mod = (mod + MODE_NUM - 1) % MODE_NUM
-
 void main_process();
+void mode_up(enum mode *);
+void mode_down(enum mode *);
 
 #endif /* _MAIN_P_H_ */
