@@ -37,7 +37,7 @@ void output_reset()
 {
     fnd_dd(0000);
     led_mm(LED_BLANK);
-    lcd_dd(LCD_BLANK, LCD_BLANK);
+    lcd_dd(" ", " ");
     motor_dd(MOTOR_OFF);
     // usleep(1000);
 }

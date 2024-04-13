@@ -28,7 +28,9 @@ void main_process()
     /**/ merge->_BACK_ = false;
 
     enum mode cur_mode = PUT_INIT;
-    char key_buf[500], val_buf[500];
+    char key_buf[4], val_buf[5], val_input_buf[1000];
+    int prev_switch_input = 0, term_counter = 0;
+    init_buf(key_buf, val_buf, val_input_buf);
 
     struct table_elem mem_table[3];
     int put_order = 1;
@@ -71,6 +73,7 @@ void main_process()
         }
         if (input->readkey_input == READKEY_VOL_UP)
         {
+            init_buf(key_buf, val_buf, val_input_buf);
             mode_up(&cur_mode);
             output->_RESET_ = true;
             if (msgsnd(output_q, output, OUTPUT_MSG_SIZE, 0) == -1)
@@ -82,6 +85,7 @@ void main_process()
         }
         if (input->readkey_input == READKEY_VOL_DOWN)
         {
+            init_buf(key_buf, val_buf, val_input_buf);
             mode_down(&cur_mode);
             output->_RESET_ = true;
             if (msgsnd(output_q, output, OUTPUT_MSG_SIZE, 0) == -1)
@@ -92,17 +96,70 @@ void main_process()
             continue;
         }
 
+        /* REQ PROCESS ROUTINE */
+        int switch_input = switch_check(input);
         switch (cur_mode)
         {
         case PUT_INIT:
-
+        {
+            init_buf(key_buf, val_buf, val_input_buf);
+            output->cur_mode = cur_mode;
+            output->fnd = 0;
+            memset(output->lcd2, ' ', sizeof(output->lcd2));
+            if (switch_input != -1)
+                cur_mode++;
             break;
+        }
         case PUT_KEY:
+        {
+            if (term_counter > 100) /* 1~ */
+                init_buf(key_buf, NULL, NULL);
+            if (switch_input != -1 && prev_switch_input == -1) /* (#)123456789 */
+            {
+                int i;
+                for (i = 0; i < 4 && key_buf[i] != 0; i++)
+                    ;
+                if (i != 4) /* if not full */
+                    key_buf[i] = switch_input;
+            }
+            if (switch_input == -1)
+                term_counter = 0;
+            else if (switch_input == 1)
+                term_counter++;
 
+            output->cur_mode = cur_mode;
+            output->fnd = atoi(key_buf);
+            memcpy(output->lcd2, val_buf, sizeof(val_buf));
+
+            if (input->reset_input) /* reset */
+                cur_mode++;
             break;
+        }
         case PUT_VAL:
+        {
+            if (term_counter > 100) /* 1~ */
+                init_buf(NULL, val_buf, NULL);
+            if (switch_input != -1 && prev_switch_input == -1) /* (#)123456789 */
+            {
+                int i;
+                for (i = 0; i < 1000 && val_input_buf[i] != 0; i++)
+                    ;
+                if (i != 1000) /* if not full */
+                    val_input_buf[i] = switch_input;
+            }
+            if (switch_input == -1)
+                term_counter = 0;
+            else if (switch_input == 1)
+                term_counter++;
 
+            output->cur_mode = cur_mode;
+            output->fnd = atoi(key_buf);
+            memcpy(output->lcd2, val_buf, sizeof(val_buf));
+
+            if (input->reset_input) /* reset */
+                cur_mode--;
             break;
+        }
         case PUT_REQ:
 
             break;
@@ -124,6 +181,19 @@ void main_process()
         default:
             break;
         }
+        if (msgsnd(output_q, output, OUTPUT_MSG_SIZE, 0) == -1)
+        {
+            perror("ERROR(main_process) : msgsnd failed.\n");
+            _exit(-1);
+        }
+
+        if (mem_table_cnt == 3) /* flush */
+        {
+
+            mem_table_cnt = 0;
+        }
+
+        prev_switch_input = switch_input;
     }
 
     if (shmdt(merge) < 0)
@@ -157,4 +227,34 @@ void mode_down(enum mode *_cur)
     else
         cur = GET_INIT;
     *_cur = cur;
+}
+
+void init_buf(char *key_buf, char *val_buf, char *val_input_buf)
+{
+    if (key_buf != NULL)
+        memset(key_buf, 0, sizeof(key_buf));
+    if (val_buf != NULL)
+        memset(val_buf, ' ', sizeof(val_buf));
+    if (val_input_buf != NULL)
+        memset(val_input_buf, 0, sizeof(val_input_buf));
+}
+
+char switch_check(struct input_msg *input)
+{
+    int ret = 0;
+    bool flag = false;
+    for (int i = 0; i < 9; i++)
+    {
+        if (input->switch_input[i])
+        {
+            flag = true;
+            ret *= 10;
+            ret += (i + 1);
+        }
+    }
+    return (flag ? ret : -1);
+}
+
+void val_interpret()
+{
 }

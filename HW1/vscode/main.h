@@ -28,6 +28,24 @@
 #define OUTPUT_KEY (key_t)0xB2B2
 #define MERGE_KEY (key_t)0xC3C3
 
+/* main : modes */
+/*#define MODE_NUM 3
+#define PUT_MODE 0
+#define GET_MODE 1
+#define MERGE_MODE 2*/
+enum mode
+{
+    PUT_INIT = 0,
+    PUT_KEY,
+    PUT_VAL,
+    PUT_REQ,
+    GET_INIT,
+    GET_KEY,
+    GET_REQ,
+    MERGE_INIT,
+    MERGE_REQ
+};
+
 /* key-value structure */
 struct table_elem
 {
@@ -54,10 +72,9 @@ struct output_msg // msgq
     bool _BACK_;
     bool _RESET_;
 
-    char cur_mode;
-    char minor_mode;
+    enum mode cur_mode;
     int fnd;
-    unsigned char lcd_2[16];
+    unsigned char lcd2[16];
 };
 #define OUTPUT_MSG_SIZE sizeof(struct output_msg) - sizeof(long)
 
@@ -76,23 +93,11 @@ struct merge_msg // shm
 #define READKEY_RELEASED 0
 #define READKEY_PRESSED 1
 
-/* main : modes */
-/*#define MODE_NUM 3
-#define PUT_MODE 0
-#define GET_MODE 1
-#define MERGE_MODE 2*/
-enum mode
-{
-    PUT_INIT = 0,
-    PUT_KEY,
-    PUT_VAL,
-    PUT_REQ,
-    GET_INIT,
-    GET_KEY,
-    GET_REQ,
-    MERGE_INIT,
-    MERGE_REQ
-};
+/* output : blanks */
+#define LED_BLANK (unsigned char)0x00
+// unsigned char LCD_BLANK[16] = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
+#define MOTOR_OFF (unsigned char)0
+#define MOTOR_ON (unsigned char)1
 
 /* main : st files */
 #define STORAGE_DIR "storage_files"
