@@ -59,8 +59,10 @@ void lcd_dd(unsigned char *line1, unsigned char *line2)
 
     unsigned char str[32];
     memset(str, ' ', 32);
-    strncpy(str, line1, 16);
-    strncpy(str + 16, line2, 16);
+    if (line1 != NULL)
+        strncpy(str, line1, 16);
+    if (line2 != NULL)
+        strncpy(str + 16, line2, 16);
     write(dev, str, 32);
 
     close(dev);

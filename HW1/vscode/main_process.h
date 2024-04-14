@@ -6,7 +6,7 @@
 void main_process();
 void mode_up(enum mode *);
 void mode_down(enum mode *);
-void init_buf(char *, char *, char *);
+void init_buf(char *, char *, char *, int *);
 char switch_check(struct input_msg *input);
 
 #endif /* _MAIN_P_H_ */

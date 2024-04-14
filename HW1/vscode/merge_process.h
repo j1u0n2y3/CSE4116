@@ -2,6 +2,7 @@
 #define _MERGE_P_H_
 
 #include "main.h"
+#include "device.h"
 
 void merge_process();
 

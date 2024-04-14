@@ -29,8 +29,9 @@ void main_process()
 
     enum mode cur_mode = PUT_INIT;
     char key_buf[4], val_buf[5], val_input_buf[1000];
+    int val_input_buf_top = 0;
     int prev_switch_input = 0, term_counter = 0;
-    init_buf(key_buf, val_buf, val_input_buf);
+    init_buf(key_buf, val_buf, val_input_buf, &val_input_buf_top);
 
     struct table_elem mem_table[3];
     int put_order = 1;
@@ -73,7 +74,7 @@ void main_process()
         }
         if (input->readkey_input == READKEY_VOL_UP)
         {
-            init_buf(key_buf, val_buf, val_input_buf);
+            init_buf(key_buf, val_buf, val_input_buf, &val_input_buf_top);
             mode_up(&cur_mode);
             output->_RESET_ = true;
             if (msgsnd(output_q, output, OUTPUT_MSG_SIZE, 0) == -1)
@@ -85,7 +86,7 @@ void main_process()
         }
         if (input->readkey_input == READKEY_VOL_DOWN)
         {
-            init_buf(key_buf, val_buf, val_input_buf);
+            init_buf(key_buf, val_buf, val_input_buf, &val_input_buf_top);
             mode_down(&cur_mode);
             output->_RESET_ = true;
             if (msgsnd(output_q, output, OUTPUT_MSG_SIZE, 0) == -1)
@@ -102,7 +103,7 @@ void main_process()
         {
         case PUT_INIT:
         {
-            init_buf(key_buf, val_buf, val_input_buf);
+            init_buf(key_buf, val_buf, val_input_buf, &val_input_buf_top);
             output->cur_mode = cur_mode;
             output->fnd = 0;
             memset(output->lcd2, ' ', sizeof(output->lcd2));
@@ -113,7 +114,7 @@ void main_process()
         case PUT_KEY:
         {
             if (term_counter > 100) /* 1~ */
-                init_buf(key_buf, NULL, NULL);
+                init_buf(key_buf, NULL, NULL, NULL);
             if (switch_input != -1 && prev_switch_input == -1) /* (#)123456789 */
             {
                 int i;
@@ -137,20 +138,25 @@ void main_process()
         }
         case PUT_VAL:
         {
+            if (switch_input == 64 || switch_input == 46)
+            {
+                // main_put();
+            }
             if (term_counter > 100) /* 1~ */
-                init_buf(NULL, val_buf, NULL);
+                init_buf(NULL, val_buf, val_input_buf, &val_input_buf_top);
             if (switch_input != -1 && prev_switch_input == -1) /* (#)123456789 */
             {
-                int i;
-                for (i = 0; i < 1000 && val_input_buf[i] != 0; i++)
-                    ;
-                if (i != 1000) /* if not full */
-                    val_input_buf[i] = switch_input;
+                if (val_buf[4] != 0)
+                    val_input_buf[val_input_buf_top++] = switch_input;
             }
             if (switch_input == -1)
+            {
                 term_counter = 0;
+                val_input_buf[val_input_buf_top++] = '#';
+            }
             else if (switch_input == 1)
                 term_counter++;
+            // val_interpret(val_buf, val_input_buf, val_input_buf_top);
 
             output->cur_mode = cur_mode;
             output->fnd = atoi(key_buf);
@@ -229,14 +235,17 @@ void mode_down(enum mode *_cur)
     *_cur = cur;
 }
 
-void init_buf(char *key_buf, char *val_buf, char *val_input_buf)
+void init_buf(char *key_buf, char *val_buf, char *val_input_buf, int *val_input_buf_top)
 {
     if (key_buf != NULL)
         memset(key_buf, 0, sizeof(key_buf));
     if (val_buf != NULL)
         memset(val_buf, ' ', sizeof(val_buf));
     if (val_input_buf != NULL)
+    {
         memset(val_input_buf, 0, sizeof(val_input_buf));
+        *val_input_buf_top = 0;
+    }
 }
 
 char switch_check(struct input_msg *input)
@@ -255,6 +264,11 @@ char switch_check(struct input_msg *input)
     return (flag ? ret : -1);
 }
 
-void val_interpret()
+void val_interpret(char *val_buf, char *val_input_buf, int val_input_buf_top)
 {
+    while (val_input_buf[val_input_buf_top--] != '#')
+        ;
+    for (int i = 0; i < val_input_buf_top; i++)
+    {
+    }
 }

@@ -27,6 +27,7 @@
 #define INPUT_KEY (key_t)0xA1A1
 #define OUTPUT_KEY (key_t)0xB2B2
 #define MERGE_KEY (key_t)0xC3C3
+#define LED_KEY (key_t)0xD4D4
 
 /* main : modes */
 /*#define MODE_NUM 3
@@ -85,6 +86,15 @@ struct merge_msg // shm
     struct table_elem mem_table[3];
 };
 #define MERGE_MSG_SIZE sizeof(struct merge_msg)
+
+struct led_msg // msgq
+{
+    long mtype;
+    bool _BACK_;
+
+    enum mode cur_mode;
+};
+#define LED_MSG_SIZE sizeof(struct led_msg) - sizeof(long)
 
 /* input : readkey nums */
 #define READKEY_BACK 158
