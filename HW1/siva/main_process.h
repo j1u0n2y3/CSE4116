@@ -16,14 +16,15 @@ void main_put(char *key_buf, char *val_buf, struct table_elem *mem_table, int *m
 void main_flush(struct table_elem *mem_table, int mem_table_cnt, bool _BACK_, bool _CALL_);
 void main_get(char *key_buf, char *val_buf, struct table_elem *mem_table);
 bool findValueByKey(const char *filename, int searchKey, char *result);
-int countLinesInFile(const char *fileName);
 
-inline int my_atoi(char *key_buf)
-{
+
+inline int my_atoi(char *key_buf){
     int result = 0;
     int i;
-    for (i = 0; i < 4; ++i)
+    for (i = 0; i < 4; ++i) {
+        // '0'을 빼주어 실제 숫자 값으로 변환
         result = result * 10 + key_buf[i];
+    }
     return result;
 }
 

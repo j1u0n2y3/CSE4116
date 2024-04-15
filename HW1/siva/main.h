@@ -84,7 +84,6 @@ struct merge_msg // shm
 {
     bool _BACK_;
     bool _CALL_;
-    bool merge_end;
 };
 #define MERGE_MSG_SIZE sizeof(struct merge_msg)
 

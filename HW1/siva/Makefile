@@ -1,5 +1,5 @@
-#CC = arm-none-linux-gnueabi-gcc
-CC = gcc
+CC = arm-none-linux-gnueabi-gcc
+#CC = gcc
 CFLAGS = -static
 OBJS = main.o input_process.o output_process.o merge_process.o main_process.o device.o
 TARGET = 20211584.out
@@ -11,7 +11,7 @@ $(TARGET): $(OBJS)
 main.o : main.c main.h
 	$(CC) $(CFLAGS) -c main.c
 
-input_process.o : input_process.c input_process.h main.h
+inp_proc.o : input_process.c input_process.h main.h
 	$(CC) $(CFLAGS) -c input_process.c
 
 output_process.o : output_process.c output_process.h main.h

@@ -6,56 +6,45 @@ void merge_process()
 
     int merge_q = shmget(MERGE_KEY, MERGE_MSG_SIZE, 0666 | IPC_CREAT);
     struct merge_msg *merge = (struct merge_msg *)shmat(merge_q, NULL, 0);
-    merge->_BACK_ = false;
-    merge->_CALL_ = false;
-    merge->merge_end = false;
+    merge->_BACK_=false;
+    merge->_CALL_=false;
 
-    while (1)
-    {
+    while(1){
         int file_cnt = file_count("storage_files");
-        if (merge->_BACK_)
-        {
+        if(merge->_BACK_){
             usleep(4000000);
-            if (file_cnt == 3)
+            if(file_cnt == 3)
                 merge_files("storage_files");
             break;
         }
-        else if (merge->_CALL_)
-        {
+        else if(merge->_CALL_){
             merge_files("storage_files");
         }
-        else if (file_cnt == 3)
-        {
+        else if(file_cnt ==3 ){
             merge_files("storage_files");
         }
-        // usleep(100000);
-        merge->merge_end = true;
+        //usleep(100000);
     }
 
     printf("END : merge process\n");
 }
 
-int file_count(const char *dirPath)
-{
+int file_count(const char *dirPath) {
     DIR *dir;
     struct dirent *entry;
     int fileCount = 0;
 
     dir = opendir(dirPath);
-    if (dir == NULL)
-    {
+    if (dir == NULL) {
         perror("opendir");
-        return -1; // ?—?Ÿ¬ ë°œìƒ?‹œ -1 ë°˜í™˜
+        return -1; // ì—ëŸ¬ ë°œìƒì‹œ -1 ë°˜í™˜
     }
 
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (entry->d_name[0] == '.')
-        {
-            continue; // ?ˆ¨ê¹? ?ŒŒ?¼ ë°? ?˜„?¬/?ƒ?œ„ ?””? ‰?† ë¦? ?•­ëª? ê±´ë„ˆ?›°ê¸?
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] == '.') {
+            continue; // ìˆ¨ê¹€ íŒŒì¼ ë° í˜„ì¬/ìƒìœ„ ë””ë ‰í† ë¦¬ í•­ëª© ê±´ë„ˆë›°ê¸°
         }
-        if (entry->d_type != DT_DIR)
-        {
+        if (entry->d_type != DT_DIR) {
             fileCount++;
         }
     }
@@ -64,96 +53,84 @@ int file_count(const char *dirPath)
     return fileCount;
 }
 
-void merge_files(const char *dirPath)
-{
+void merge_files(const char *dirPath){
     motor_dd(MOTOR_ON);
     char file1Path[256], file2Path[256], file3Path[256], tmpFilePath[256];
     struct stat st;
     int file1Exists = 0, file2Exists = 0, file3Exists = 0;
-    int fileCount = 0; // ?ŒŒ?¼ ê°œìˆ˜ë¥? ?„¸ê¸? ?œ„?•œ ë³??ˆ˜
+    int fileCount = 0; // íŒŒì¼ ê°œìˆ˜ë¥¼ ì„¸ê¸° ìœ„í•œ ë³€ìˆ˜
 
-    // ?ŒŒ?¼ ê²½ë¡œ ?„¤? •
+    // íŒŒì¼ ê²½ë¡œ ì„¤ì •
     snprintf(file1Path, sizeof(file1Path), "%s/1.st", dirPath);
     snprintf(file2Path, sizeof(file2Path), "%s/2.st", dirPath);
     snprintf(file3Path, sizeof(file3Path), "%s/3.st", dirPath);
     snprintf(tmpFilePath, sizeof(tmpFilePath), "%s/tmp.st", dirPath);
 
-    // ?ŒŒ?¼ ì¡´ì¬ ?—¬ë¶? ?™•?¸
+    // íŒŒì¼ ì¡´ì¬ ì—¬ë¶€ í™•ì¸
     file1Exists = (stat(file1Path, &st) == 0);
     file2Exists = (stat(file2Path, &st) == 0);
     file3Exists = (stat(file3Path, &st) == 0);
 
-    // ?ŒŒ?¼ ê°œìˆ˜ ?„¸ê¸?
+    // íŒŒì¼ ê°œìˆ˜ ì„¸ê¸°
     fileCount += file1Exists ? 1 : 0;
     fileCount += file2Exists ? 1 : 0;
     fileCount += file3Exists ? 1 : 0;
 
-    // ?ŒŒ?¼?´ ?‹¨ ?•˜?‚˜ë§? ì¡´ì¬?•˜?Š” ê²½ìš° ?•¨?ˆ˜ ì¢…ë£Œ
-    if (fileCount == 1)
-    {
-        printf("?‹¨ ?•˜?‚˜?˜ ?ŒŒ?¼ë§? ì¡´ì¬?•©?‹ˆ?‹¤. ?•„ë¬? ?‘?—…?„ ?ˆ˜?–‰?•˜ì§? ?•Šê³? ì¢…ë£Œ?•©?‹ˆ?‹¤.\n");
+    // íŒŒì¼ì´ ë‹¨ í•˜ë‚˜ë§Œ ì¡´ì¬í•˜ëŠ” ê²½ìš° í•¨ìˆ˜ ì¢…ë£Œ
+    if (fileCount == 1) {
+        printf("ë‹¨ í•˜ë‚˜ì˜ íŒŒì¼ë§Œ ì¡´ì¬í•©ë‹ˆë‹¤. ì•„ë¬´ ì‘ì—…ë„ ìˆ˜í–‰í•˜ì§€ ì•Šê³  ì¢…ë£Œí•©ë‹ˆë‹¤.\n");
         return;
     }
 
-    // tmp.st ?ŒŒ?¼ ?ƒ?„±
+    // tmp.st íŒŒì¼ ìƒì„±
     FILE *tmpFile = fopen(tmpFilePath, "w");
-    if (!tmpFile)
-    {
+    if (!tmpFile) {
         perror("fopen tmpFile");
         exit(EXIT_FAILURE);
     }
-
+    
     mergeAndSaveRecords("storage_files/1.st", "storage_files/2.st", "storage_files/tmp.st");
     fclose(tmpFile);
 
-    // ?ŒŒ?¼ ì²˜ë¦¬ ë¡œì§
-    if (file1Exists && file2Exists && !file3Exists)
-    {
-        // 1.st??? 2.stë§? ì¡´ì¬?•˜?Š” ê²½ìš°
+    // íŒŒì¼ ì²˜ë¦¬ ë¡œì§
+    if (file1Exists && file2Exists && !file3Exists) {
+        // 1.stì™€ 2.stë§Œ ì¡´ì¬í•˜ëŠ” ê²½ìš°
         remove(file1Path);
         remove(file2Path);
         rename(tmpFilePath, file1Path);
-    }
-    else if (file1Exists && file2Exists && file3Exists)
-    {
-        // 1.st, 2.st, 3.st ëª¨ë‘ ì¡´ì¬?•˜?Š” ê²½ìš°
+    } else if (file1Exists && file2Exists && file3Exists) {
+        // 1.st, 2.st, 3.st ëª¨ë‘ ì¡´ì¬í•˜ëŠ” ê²½ìš°
         remove(file1Path);
         remove(file2Path);
         rename(file3Path, file1Path);
         rename(tmpFilePath, file2Path);
-    }
-    else
-    {
-        printf("ì§?? •?œ ì¡°ê±´?— ë§ëŠ” ?ŒŒ?¼ êµ¬ì„±?´ ?•„?‹™?‹ˆ?‹¤.\n");
+    } else {
+        printf("ì§€ì •ëœ ì¡°ê±´ì— ë§ëŠ” íŒŒì¼ êµ¬ì„±ì´ ì•„ë‹™ë‹ˆë‹¤.\n");
     }
 
-    printf("?ŒŒ?¼ ì²˜ë¦¬ ?™„ë£?.\n");
+    printf("íŒŒì¼ ì²˜ë¦¬ ì™„ë£Œ.\n");
     usleep(2500000);
     motor_dd(MOTOR_OFF);
 }
 
-// ? ˆì½”ë“œ ë¹„êµ ?•¨?ˆ˜ (key ê¸°ì?? ?˜¤ë¦„ì°¨?ˆœ)
-int compareRecords(const void *a, const void *b)
-{
+// ë ˆì½”ë“œ ë¹„êµ í•¨ìˆ˜ (key ê¸°ì¤€ ì˜¤ë¦„ì°¨ìˆœ)
+int compareRecords(const void *a, const void *b) {
     Record *recordA = (Record *)a;
     Record *recordB = (Record *)b;
     return recordA->key - recordB->key;
 }
 
-// ?ŒŒ?¼?—?„œ ? ˆì½”ë“œë¥? ?½?–´?˜¤?Š” ?•¨?ˆ˜
-void readRecordsFromFile(const char *filename, Record **records, int *count)
-{
+// íŒŒì¼ì—ì„œ ë ˆì½”ë“œë¥¼ ì½ì–´ì˜¤ëŠ” í•¨ìˆ˜
+void readRecordsFromFile(const char *filename, Record **records, int *count) {
     FILE *file = fopen(filename, "r");
-    if (!file)
-    {
-        perror("?ŒŒ?¼ ?—´ê¸? ?‹¤?Œ¨");
+    if (!file) {
+        perror("íŒŒì¼ ì—´ê¸° ì‹¤íŒ¨");
         return;
     }
 
     int order, key;
     char value[5];
-    while (fscanf(file, "%d %d %s", &order, &key, value) == 3)
-    {
+    while (fscanf(file, "%d %d %s", &order, &key, value) == 3) {
         (*records)[*count].order = order;
         (*records)[*count].key = key;
         strcpy((*records)[*count].value, value);
@@ -163,33 +140,29 @@ void readRecordsFromFile(const char *filename, Record **records, int *count)
     fclose(file);
 }
 
-// ? ˆì½”ë“œë¥? ?•©ì¹˜ê³  ? •? ¬?•˜?—¬ ì¶œë ¥ ?ŒŒ?¼?— ????¥?•˜?Š” ?•¨?ˆ˜
-void mergeAndSaveRecords(const char *inputFile1, const char *inputFile2, const char *outputFile)
-{
-    Record *records = malloc(sizeof(Record) * 2000); // ?˜ˆ?ƒ ìµœë?? ? ˆì½”ë“œ ?ˆ˜
+// ë ˆì½”ë“œë¥¼ í•©ì¹˜ê³  ì •ë ¬í•˜ì—¬ ì¶œë ¥ íŒŒì¼ì— ì €ì¥í•˜ëŠ” í•¨ìˆ˜
+void mergeAndSaveRecords(const char *inputFile1, const char *inputFile2, const char *outputFile) {
+    Record *records = malloc(sizeof(Record) * 2000); // ì˜ˆìƒ ìµœëŒ€ ë ˆì½”ë“œ ìˆ˜
     int count = 0;
 
     readRecordsFromFile(inputFile1, &records, &count);
     readRecordsFromFile(inputFile2, &records, &count);
 
-    // key ê¸°ì???œ¼ë¡? ? ˆì½”ë“œ ? •? ¬
+    // key ê¸°ì¤€ìœ¼ë¡œ ë ˆì½”ë“œ ì •ë ¬
     qsort(records, count, sizeof(Record), compareRecords);
 
-    // ì¤‘ë³µ ? œê±? ë°? ?ŒŒ?¼ ????¥
+    // ì¤‘ë³µ ì œê±° ë° íŒŒì¼ ì €ì¥
     FILE *outFile = fopen(outputFile, "w");
-    if (!outFile)
-    {
-        perror("ì¶œë ¥ ?ŒŒ?¼ ?—´ê¸? ?‹¤?Œ¨");
+    if (!outFile) {
+        perror("ì¶œë ¥ íŒŒì¼ ì—´ê¸° ì‹¤íŒ¨");
         free(records);
         return;
     }
     int i;
-    int new_order = 1;
-    for (i = 0; i < count; i++)
-    {
-        if (i < count - 1 && records[i].key == records[i + 1].key)
-        {
-            continue; // ì¤‘ë³µ key?Š” ê±´ë„ˆ?›°ê¸?
+    int new_order=1;
+    for (i = 0; i < count; i++) {
+        if (i < count - 1 && records[i].key == records[i + 1].key) {
+            continue; // ì¤‘ë³µ keyëŠ” ê±´ë„ˆë›°ê¸°
         }
         fprintf(outFile, "%d %d %s\n", new_order++, records[i].key, records[i].value);
     }

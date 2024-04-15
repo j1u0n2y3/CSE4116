@@ -4,8 +4,7 @@
 #include "main.h"
 #include "device.h"
 
-typedef struct
-{
+typedef struct {
     int order;
     int key;
     char value[5];
