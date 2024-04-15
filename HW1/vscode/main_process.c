@@ -335,7 +335,7 @@ void main_process()
                 int merge_q = shmget(MERGE_KEY, MERGE_MSG_SIZE, 0666 | IPC_CREAT);
                 struct merge_msg *merge = (struct merge_msg *)shmat(merge_q, NULL, 0);
                 while (!merge->merge_end)
-                    usleep(500000);
+                    usleep(250000);
                 merge->merge_end = false;
                 shmdt(merge);
                 char str[16];
