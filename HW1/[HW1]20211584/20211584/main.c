@@ -45,6 +45,8 @@ int main()
     waitpid(main_pid, NULL, 0);
     ipc_ctl();
 
+    printf("Thank you!\n");
+
     return 0;
 }
 

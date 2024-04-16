@@ -67,7 +67,7 @@ void output_process()
             {
                 led_mm(0xFF);
                 usleep(2500000);
-                led->cur_mode=GET_INIT;
+                led->cur_mode = GET_INIT;
                 break;
             }
             case MERGE_INIT:
@@ -85,6 +85,8 @@ void output_process()
             }
         }
 
+        free(led);
+
         printf("END : led process\n");
         _exit(0);
     }
@@ -97,10 +99,9 @@ void output_process()
     }
 
     struct output_msg *output = (struct output_msg *)malloc(sizeof(struct output_msg));
-    output->_BACK_=false;
-    output->_RESET_=true;
-    output->mtype=1;
-
+    output->_BACK_ = false;
+    output->_RESET_ = true;
+    output->mtype = 1;
 
     struct led_msg *led = (struct led_msg *)malloc(sizeof(struct led_msg));
     led->mtype = 1;
@@ -114,16 +115,18 @@ void output_process()
             perror("ERROR(output_process.c) : msgrcv failed.\n");
             _exit(-1);
         }
-
+        
+        /*
         printf("**********************************************\n");
         printf("* cur mode : %d\n", output->cur_mode);
         printf("* fnd : %d\n", output->fnd);
         printf("* lcd2 : %s\n", output->lcd2);
+        */
 
-        if (output->_BACK_){
+        if (output->_BACK_)
+        {
             usleep(5000000);
             break;
-
         }
         if (output->_RESET_)
         {
@@ -143,55 +146,55 @@ void output_process()
 
         fnd_dd(output->fnd);
         switch (output->cur_mode)
-            {
-            case PUT_INIT:
-            {
-                lcd_dd("PUT MODE        ", output->lcd2);
-                break;
-            }
-            case PUT_KEY:
-            {
-                lcd_dd("PUT MODE        ", output->lcd2);
-                break;
-            }
-            case PUT_VAL:
-            {
-                lcd_dd("PUT MODE        ", output->lcd2);
-                break;
-            }
-            case PUT_REQ:
-            {
-                lcd_dd("PUT MODE        ", output->lcd2);
-                break;
-            }
-            case GET_INIT:
-            {
-                lcd_dd("GET MODE        ", output->lcd2);
-                break;
-            }
-            case GET_KEY:
-            {
-                lcd_dd("GET MODE        ", output->lcd2);
-                break;
-            }
-            case GET_REQ:
-            {
-                lcd_dd("GET MODE        ", output->lcd2);
-                break;
-            }
-            case MERGE_INIT:
-            {
-                lcd_dd("MERGE MODE      ", output->lcd2);
-                break;
-            }
-            case MERGE_REQ:
-            {
-                lcd_dd("MERGE MODE      ", output->lcd2);
-                break;
-            }
-            default:
-                break;
-            }
+        {
+        case PUT_INIT:
+        {
+            lcd_dd("PUT MODE        ", output->lcd2);
+            break;
+        }
+        case PUT_KEY:
+        {
+            lcd_dd("PUT MODE        ", output->lcd2);
+            break;
+        }
+        case PUT_VAL:
+        {
+            lcd_dd("PUT MODE        ", output->lcd2);
+            break;
+        }
+        case PUT_REQ:
+        {
+            lcd_dd("PUT MODE        ", output->lcd2);
+            break;
+        }
+        case GET_INIT:
+        {
+            lcd_dd("GET MODE        ", output->lcd2);
+            break;
+        }
+        case GET_KEY:
+        {
+            lcd_dd("GET MODE        ", output->lcd2);
+            break;
+        }
+        case GET_REQ:
+        {
+            lcd_dd("GET MODE        ", output->lcd2);
+            break;
+        }
+        case MERGE_INIT:
+        {
+            lcd_dd("MERGE MODE      ", output->lcd2);
+            break;
+        }
+        case MERGE_REQ:
+        {
+            lcd_dd("MERGE MODE      ", output->lcd2);
+            break;
+        }
+        default:
+            break;
+        }
 
         prev_mode = output->cur_mode;
     }
@@ -211,7 +214,9 @@ void output_process()
         _exit(-1);
     }
 
-    printf("IM HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11\n");
+    free(led);
+    free(output);
+
     printf("END : output process\n");
 }
 

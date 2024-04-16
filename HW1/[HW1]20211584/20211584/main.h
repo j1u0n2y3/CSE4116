@@ -77,6 +77,7 @@ struct output_msg // msgq
     enum mode cur_mode;
     int fnd;
     char lcd2[16];
+    bool motor;
 };
 #define OUTPUT_MSG_SIZE sizeof(struct output_msg) - sizeof(long)
 
@@ -84,6 +85,7 @@ struct merge_msg // shm
 {
     bool _BACK_;
     bool _CALL_;
+    bool merge_end;
 };
 #define MERGE_MSG_SIZE sizeof(struct merge_msg)
 

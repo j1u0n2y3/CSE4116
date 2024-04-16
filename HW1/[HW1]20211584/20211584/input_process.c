@@ -3,7 +3,6 @@
 void input_process()
 {
     printf("BEGIN : input process\n");
-    printf("hey..\n");
     int input_q = msgget(INPUT_KEY, 0666 | IPC_CREAT);
     if (input_q == -1)
     {
