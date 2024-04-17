@@ -31,10 +31,6 @@
 #define LED_KEY (key_t)0x4D4D
 
 /* main : modes */
-/*#define MODE_NUM 3
-#define PUT_MODE 0
-#define GET_MODE 1
-#define MERGE_MODE 2*/
 enum mode
 {
     PUT_INIT = 0,

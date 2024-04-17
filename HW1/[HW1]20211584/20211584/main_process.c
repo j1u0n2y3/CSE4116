@@ -37,44 +37,14 @@ void main_process()
     struct table_elem mem_table[3];
     int put_order = 1;
     int mem_table_cnt = 0;
+
     while (1)
     {
-        struct output_msg *output = (struct output_msg *)malloc(sizeof(struct output_msg));
-        output->mtype = 1;
-        output->_BACK_ = false;
-        output->_RESET_ = false;
         if (msgrcv(input_q, input, INPUT_MSG_SIZE, 1, 0) == -1)
         {
             perror("ERROR(main_process.c) : msgrcv failed.\n");
             _exit(-1);
         }
-
-        /* DEBUG ROUTINE *//*
-        printf("--------------------------------------------------------------\n");
-        printf("* current mode : %d *\n", cur_mode);
-        printf("*mtype : %d\n*_BACK_ : %d\n*readkey : %d\n*reset : %d\n",
-               input->mtype, input->_BACK_, input->readkey_input, input->reset_input);
-        printf("*switch(num) : ");
-        int i;
-        for (i = 0; i < 9; i++)
-            printf("[%d]%d ", i + 1, input->switch_input[i]);
-        printf("\n");
-        printf("*val_input_buf : %s\n", val_input_buf);
-        printf("*prev_switch_input : %d\n", prev_switch_input);
-        printf("*term_counter : %d\n", term_counter);
-        printf("*mem table : \n");
-        for (i = 0; i < 3; i++)
-        {
-            printf("[%d] %d / %d / %s\n", i, mem_table[i].order, mem_table[i].key, mem_table[i].val);
-        }
-        printf("*mem table cnt : %d\n", mem_table_cnt);
-        printf("--------------------------------------------------------------\n");
-        printf("@ key_buf : ");
-        for (i = 0; i < 4; i++)
-            printf("%d ", key_buf[i]);
-        printf("\n");
-        printf("@@ key : %d\n", my_atoi(key_buf));*/
-
         /* URGENT REQUESTS */
         if (input->_BACK_)
         {
@@ -103,16 +73,7 @@ void main_process()
         }
         if (input->readkey_input == READKEY_VOL_DOWN)
         {
-            init_buf(key_buf, val_buf, val_input_buf, &val_input_buf_top);
-            memset(merge_lcd, ' ', sizeof(merge_lcd));
-            mode_down(&cur_mode);
-            output->_RESET_ = true;
-            if (msgsnd(output_q, output, OUTPUT_MSG_SIZE, 0) == -1)
-            {
-                perror("ERROR(main_process.c) : msgsnd failed\n");
-                _exit(-1);
-            }
-            continue;
+            //...
         }
 
         /* REQ PROCESS ROUTINE */
@@ -120,45 +81,7 @@ void main_process()
         int reset_input = input->reset_input;
         switch (cur_mode)
         {
-        case PUT_INIT:
-        {
-            init_buf(key_buf, val_buf, val_input_buf, &val_input_buf_top);
-            output->cur_mode = cur_mode;
-            output->fnd = 0;
-            memset(output->lcd2, ' ', sizeof(output->lcd2));
-            if (1 <= switch_input && switch_input <= 89 && prev_switch_input == 255)
-            {
-                cur_mode++;
-                switch_input = 255;
-            }
-            break;
-        }
-        case PUT_KEY:
-        {
-            if (term_counter > 10) /* 1~ */
-                init_buf(key_buf, NULL, NULL, NULL);
-            if (switch_input != 255 && prev_switch_input == 255) /* (#)123456789 */
-            {
-                int i;
-                for (i = 0; i < 4 && key_buf[i] != 0; i++)
-                    ;
-                if (i != 4) /* if not full */
-                    key_buf[i] = switch_input;
-            }
-            if (switch_input == 255 && prev_switch_input != 255)
-                term_counter = 0;
-            else if (switch_input == 1)
-                term_counter++;
-
-            output->cur_mode = cur_mode;
-            output->fnd = my_atoi(key_buf);
-            memcpy(output->lcd2, val_buf, 16);
-
-            if (reset_input && prev_reset_input == 0) /* reset */
-                cur_mode++;
-
-            break;
-        }
+        // ...
         case PUT_VAL:
         {
             if (switch_input == 46)
@@ -304,6 +227,7 @@ void main_process()
                 reset_input = 0;
             }
             break;
+
         case MERGE_REQ:
         {
             output->cur_mode = cur_mode;
@@ -313,17 +237,13 @@ void main_process()
             struct dirent *entry;
 
             if (dir == NULL)
-            {
                 _exit(-1);
-            }
 
             int fileCount = 0;
             while ((entry = readdir(dir)) != NULL)
             {
                 if (entry->d_name[0] != '.')
-                {
                     fileCount++;
-                }
             }
             closedir(dir);
 
@@ -342,12 +262,12 @@ void main_process()
                 shmdt(merge);
                 char str[25];
                 memset(str, ' ', 25);
-                sprintf(str, "1 st %d                ", countLinesInFile("storage_files/1.st"));   
+                sprintf(str, "1 st %d                ", countLinesInFile("storage_files/1.st"));
                 memcpy(merge_lcd, str, 16);
             }
 
             cur_mode = MERGE_INIT;
-            
+
             break;
         }
         default:
@@ -529,7 +449,8 @@ char eng_plus(char eng)
     return eng;
 }
 
-void main_put(char *key_buf, char *val_buf, struct table_elem *mem_table, int *mem_table_cnt, int *put_order)
+void main_put(char *key_buf, char *val_buf, struct table_elem *mem_table,
+              int *mem_table_cnt, int *put_order)
 {
     if (*mem_table_cnt == 3)
     {
@@ -559,8 +480,8 @@ void main_flush(struct table_elem *mem_table, int mem_table_cnt, bool _BACK_, bo
 
     if (!_CALL_ && mem_table_cnt != 0)
     {
-        const char *dirPath = "storage_files"; 
-        char filePath[256];          
+        const char *dirPath = "storage_files";
+        char filePath[256];
         FILE *file;
         DIR *dir;
         struct dirent *entry;
