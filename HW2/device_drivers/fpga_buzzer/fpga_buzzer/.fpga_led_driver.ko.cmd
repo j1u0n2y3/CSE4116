@@ -1,0 +1,1 @@
+cmd_/work/mylinux/fpga_devices/fpga_led/fpga_led_driver.ko := /opt/toolchains/arm-2010q1/bin/arm-none-linux-gnueabi-ld -EL -r  -T /usr/src/linux-2.6.35-achro4210/scripts/module-common.lds --build-id -o /work/mylinux/fpga_devices/fpga_led/fpga_led_driver.ko /work/mylinux/fpga_devices/fpga_led/fpga_led_driver.o /work/mylinux/fpga_devices/fpga_led/fpga_led_driver.mod.o

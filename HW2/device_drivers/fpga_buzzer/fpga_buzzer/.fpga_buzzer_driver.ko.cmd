@@ -1,0 +1,1 @@
+cmd_/work/achroimx6q/fpga_driver/fpga_buzzer/fpga_buzzer_driver.ko := arm-none-linux-gnueabi-ld -EL -r  -T /work/achroimx6q/kernel/scripts/module-common.lds --build-id  -o /work/achroimx6q/fpga_driver/fpga_buzzer/fpga_buzzer_driver.ko /work/achroimx6q/fpga_driver/fpga_buzzer/fpga_buzzer_driver.o /work/achroimx6q/fpga_driver/fpga_buzzer/fpga_buzzer_driver.mod.o
