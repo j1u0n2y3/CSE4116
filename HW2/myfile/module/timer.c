@@ -15,7 +15,7 @@ static atomic_t already_open = ATOMIC_INIT(NOT_USED);
 
 static int timer_open(struct inode *, struct file *);
 static int timer_close(struct inode *, struct file *);
-static int timer_read(struct file *, char __user *, size_t, loff_t *);
+static int timer_read(struct file *, char __user *, size_t, loff_t *); // user ?
 static long timer_ioctl(struct file *, unsigned int, unsigned long);
 
 static struct file_operations timer_fops = {
@@ -25,6 +25,8 @@ static struct file_operations timer_fops = {
     .read = timer_read,
     .unlocked_ioctl = timer_ioctl,
 };
+
+static int timer_atoi(const char *);
 
 static int timer_open(struct inode *inode, struct file *file)
 {
@@ -48,6 +50,38 @@ static int timer_read(struct file *file, char __user *buffer, size_t length, lof
 
 static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
 {
+    switch (ioctl_num)
+    {
+    case IOCTL_SET_OPTION:
+    {
+        char *option = (char *)ioctl_param;
+        char buf[11];
+        if (strncpy_from_user(buf, option, 10) < 0)
+        {
+            printk("ERROR(timer.c) : strncpy_from_user failed.\n");
+            return -1;
+        }
+        //
+    }
+    case IOCTL_COMMAND:
+    {
+    }
+    default:
+    {
+        goto ioctl_error;
+    }
+    }
+}
+
+/**/
+
+static int timer_atoi(const char *str)
+{
+    int i;
+    int res = 0;
+    for (i = 0; str[i] != '\0'; ++i)
+        res = res * 10 + str[i] - '0';
+    return res;
 }
 
 /**/
@@ -69,7 +103,6 @@ static int __init timer_init()
 static void __exit timer_exit()
 {
     unregister_chrdev(MAJOR_NUM, DEV_NAME);
-
     del_timer_sync(&(timer_data.timer));
     unmap_device();
 }

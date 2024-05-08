@@ -99,7 +99,7 @@ void lcd_write(const char *left_up, const int right_up,
     value[32] = '\0';
 
     /* Copy the left_up string into the value buffer. */
-    for (i = 0; left_up[i] != '\0'; i++)
+    for (i = 0; i < 13 && left_up[i] != '\0'; i++)
         value[i] = left_up[i];
     /* Format the right_up integer and store in right_up_buf.
      * Copy the right_up_buf into the value buffer,
@@ -110,7 +110,7 @@ void lcd_write(const char *left_up, const int right_up,
     for (i = 13; i < 16; i++)
         value[i] = right_up_buf[i - 13];
     /* Copy the down string into the value buffer, starting at position 16. */
-    for (i = 16; down[i - 16] != '\0'; i++)
+    for (i = 16; i < 32 && down[i - 16] != '\0'; i++)
         value[i] = down[i - 16];
 
     /* Write value to LCD. */

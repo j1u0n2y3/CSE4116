@@ -16,6 +16,13 @@ struct metadata
     int interval;
     int cnt;
     int elapsed;
+    /* LCD */
+    char left_up[14];
+    int right_up;
+    char down[17];
+    /* FND */
+    int fnd_idx;
+    int symbol;
 };
 
 typedef struct

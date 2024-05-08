@@ -20,6 +20,7 @@
 #include <linux/string.h>
 #include <linux/sched.h>
 #include <linux/version.h>
+#include <linux/semaphore.h>
 
 #include "timer.h"
 #include "device.h"
