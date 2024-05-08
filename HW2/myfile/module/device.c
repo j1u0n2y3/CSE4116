@@ -6,23 +6,6 @@
 
 #include "core.h"
 
-#define DEV_NUM 5 /* Number of devices supported */
-/* SWITCH */
-#define SWITCH 0
-#define SWITCH_PA 0x08000000 /* Device physical address for SWITCH */
-/* FND */
-#define FND 1
-#define FND_PA 0x08000004
-/* LED */
-#define LED 2
-#define LED_PA 0x08000016
-/* DOT */
-#define DOT 3
-#define DOT_PA 0x08000210
-/* LCD */
-#define LCD 4
-#define LCD_PA 0x08000090
-
 /* DOT MATRIX FONT */
 static const unsigned char dot_number[10][10] = {
     {0x3e, 0x7f, 0x63, 0x73, 0x73, 0x6f, 0x67, 0x63, 0x7f, 0x3e}, // 0
@@ -56,7 +39,7 @@ int map_device()
     {
         if (dev_addr[i] == NULL)
         {
-            printk("ERROR(device.c) : [%d] ioremap failed\n", i);
+            printk("ERROR(device.c) : [%d] device ioremap failed\n", i);
             return -1;
         }
     }
