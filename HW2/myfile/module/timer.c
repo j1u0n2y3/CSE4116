@@ -1,23 +1,38 @@
 /*
  * timer.c -
+ * This source code is for a Linux kernel module that implements a timer device driver.
+ * It includes (1)replaced fop functions for device file,
+ *             (2)interface/utility functions for managing timer,
+ *             (3)functions for module init/exit.
  *
+ * To install this module, the following steps need to be taken:
+ *             $ insmod dev_driver.ko
+ *             $ mknod /dev/dev_driver c 242 0
+ *
+ * To remove this module, the following steps need to be taken:
+ * (optional)  $ rm /dev/dev_driver
+ *             $ rmmod dev_driver
+ *
+ * Author : 20211584 Junyeong JANG
  */
 
 #include "core.h"
 
 static TIMER timer_data;
+/* */
 enum
 {
     NOT_USED = 0,
     EXCLUSIVE_OPEN = 1
 };
 static atomic_t already_open = ATOMIC_INIT(NOT_USED);
+struct semaphore TIMER_END;
 
+/* Replaced fop functions for device file HEADER */
 static int timer_open(struct inode *, struct file *);
 static int timer_close(struct inode *, struct file *);
-static int timer_read(struct file *, char __user *, size_t, loff_t *); // user ?
+static int timer_read(struct file *, char __user *, size_t, loff_t *);
 static long timer_ioctl(struct file *, unsigned int, unsigned long);
-
 static struct file_operations timer_fops = {
     .owner = THIS_MODULE,
     .open = timer_open,
@@ -26,13 +41,17 @@ static struct file_operations timer_fops = {
     .unlocked_ioctl = timer_ioctl,
 };
 
+/* Interface/Utility functions for managing timer HEADER */
 static int timer_atoi(const char *);
 static void timer_metadata_init(const char *);
 static void timer_display();
 static void timer_add();
 static void timer_handler(unsigned long);
-static void timer_finish();
 
+/* 1. Replaced fop functions for device file -
+ * When a file operation is executed on the timer device file,
+ * the corresponding (replaced) fop function is executed.
+ */
 static int timer_open(struct inode *inode, struct file *file)
 {
     if (atomic_cmpxchg(&already_open, NOT_USED, EXCLUSIVE_OPEN))
@@ -74,7 +93,7 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
     {
         del_timer_sync(&(timer_data.timer));
         timer_add();
-        /*sema down*/
+        down_interruptible(&TIMER_END);
     }
     default:
     {
@@ -85,8 +104,9 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
     return 0;
 }
 
-/**/
-
+/* 2. Interface/Utility functions for managing timer -
+ * There are some interface functions to manage timer device.
+ */
 static int timer_atoi(const char *str)
 {
     int i;
@@ -117,16 +137,14 @@ static void timer_metadata_init(const char *option)
     tmp.cnt = u_cnt;
     tmp.elapsed = 0;
     /* LCD fields */
-    snprintf(tmp.left_up, 8, STUDENT_ID);
+    snprintf(tmp.left_up, 8, "20211584");
     tmp.right_up = tmp.cnt - tmp.elapsed;
-    snprintf(tmp.down, 3, STUDENT_NAME);
+    snprintf(tmp.down, 3, "JJY");
     /* FND fields */
     for (i = 0; i < 4; i++)
     {
         if (u_init[i] != '0')
         {
-            tmp.init_fnd_idx = i;
-            tmp.init_symbol = u_init[i] - '0';
             tmp.fnd_idx = i;
             tmp.symbol = u_init[i] - '0';
         }
@@ -160,24 +178,45 @@ static void timer_handler(unsigned long timeout)
     if (tmp.elapsed < tmp.cnt)
     {
         tmp.right_up = tmp.cnt - tmp.elapsed;
+        if (++tmp.symbol == 9)
+            tmp.symbol = 1;
+        if (tmp.elapsed % 8 == 0)
+            tmp.fnd_idx = (tmp.fnd_idx + 1) % 4;
+
+        timer_data.info = tmp;
+        timer_display();
+        timer_add();
     }
     else if (tmp.cnt <= tmp.elapsed &&
              tmp.elapsed < tmp.cnt + 3)
     {
+        snprintf(tmp.left_up, 10, "Time's up!");
+        tmp.right_up = 0;
+        snprintf(tmp.down, 16, "Shutdown in %d...", 3 - (tmp.elapsed - tmp.cnt));
+        tmp.fnd_idx = 0;
+        tmp.symbol = 0;
+
+        timer_data.info = tmp;
+        timer_display();
+        timer_add();
     }
     else
     {
-        /*END(sema up)*/
-        return;
+        snprintf(tmp.left_up, 1, " ");
+        tmp.right_up = -1;
+        snprintf(tmp.down, 1, " ");
+        tmp.fnd_idx = 0;
+        tmp.symbol = 0;
+
+        timer_data.info = tmp;
+        timer_display();
+        up(&TIMER_END);
     }
 }
 
-static void timer_finish()
-{
-}
-
-/**/
-
+/* 3. Functions for module init/exit -
+ * These functions are executed when this module(timer device driver) is installed/removed.
+ */
 static int __init timer_init()
 {
     int res = register_chrdev(MAJOR_NUM, DEV_NAME, &timer_fops);
@@ -186,6 +225,7 @@ static int __init timer_init()
         printk("ERROR(timer.c) : register_chrdev failed\n");
         return -1;
     }
+    sema_init(&TIMER_END, 0);
     init_timer(&(timer_data.timer));
     map_device();
 
@@ -202,5 +242,6 @@ static void __exit timer_exit()
 module_init(timer_init);
 module_exit(timer_exit);
 
+/* Module license and author */
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Junyeong JANG");

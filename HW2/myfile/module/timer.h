@@ -1,24 +1,22 @@
 #ifndef _TIMER_H_
 #define _TIMER_H_
 
+/* TIMER DEVICE DEFINITIONS */
 #define MAJOR_NUM 242
 #define DEV_NAME "dev_driver"
 #define DEV_FILE_LOC "/dev/dev_driver"
-
+/* IOCTL NUMBERS */
 #define IOCTL_SET_OPTION _IOW(MAJOR_NUM, 1, char *)
 #define IOCTL_COMMAND _IO(MAJOR_NUM, 2);
 
-#define STUDENT_NAME "JJY"
-#define STUDENT_ID "20211584"
-
+/* DATA(TIMER) STRUCTURE */
 struct metadata
 {
-    /*** constant ***/
+    /** constant **/
     int interval;
     int cnt;
-    int init_fnd_idx;
-    int init_symbol;
-    /*** inconstant(variable) ***/
+
+    /** inconstant(variable) **/
     int elapsed;
     /* LCD */
     char left_up[14];
@@ -28,8 +26,7 @@ struct metadata
     int fnd_idx;
     int symbol;
 };
-
-typedef struct
+typedef struct _TIMER
 {
     struct timer_list timer;
     struct metadata info;

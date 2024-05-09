@@ -1,6 +1,7 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
+/* FPGA DEVICE DEFINITIONS */
 #define DEV_NUM 5 /* Number of devices supported */
 /* SWITCH */
 #define SWITCH 0
@@ -18,6 +19,7 @@
 #define LCD 4
 #define LCD_PA 0x08000090
 
+/* FPGA DEVICE INTERFACES */
 int map_device();
 void unmap_device();
 int switch_read();

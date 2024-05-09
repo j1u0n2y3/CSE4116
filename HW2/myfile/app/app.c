@@ -2,6 +2,8 @@
  * app.c -
  * This program receives the options to drive the timer device from user
  * and passes it to the timer device driver via ioctl.
+ *
+ * Author : 20211584 Junyeong JANG
  */
 
 #include <stdio.h>

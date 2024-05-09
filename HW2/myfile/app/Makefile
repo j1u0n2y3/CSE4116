@@ -1,7 +1,7 @@
 default: app.c
 	@echo ">> Compiling app.c..."
 	arm-none-linux-gnueabi-gcc -static -o app app.c
-	@echo ">> app.c has been compiled into static binary 'app'."
+	@echo ">> app.c has been compiled into 'app' binary."
 
 push:
 	@echo ">> Pushing the app to /data/local/tmp on the device..."

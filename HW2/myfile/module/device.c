@@ -1,7 +1,9 @@
 /*
  * device.c -
  * This source file contains functions to map/unmap physical addresses of various devices
- * to virtual addresses and perform read/write operations on these devices.
+ * to virtual addresses and perform formatted read/write operations on these devices.
+ *
+ * Author : 20211584 Junyeong JANG
  */
 
 #include "core.h"
@@ -25,6 +27,7 @@ static const unsigned char dot_number[10][10] = {
  */
 static unsigned char *dev_addr[DEV_NUM];
 
+/* All interface functions following do what their names say! */
 int map_device()
 {
     int i;
@@ -39,7 +42,7 @@ int map_device()
     {
         if (dev_addr[i] == NULL)
         {
-            printk("ERROR(device.c) : [%d] device ioremap failed\n", i);
+            printk("ERROR(device.c) : device [%d] ioremap failed\n", i);
             return -1;
         }
     }
@@ -95,6 +98,17 @@ void lcd_write(const char *left_up, const int right_up,
 {
     int i;
     unsigned char value[33]; /* Buffer to hold the formatted string to be displayed on LCD. */
+    /* value[33] :
+     * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+     * | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 |
+     * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+     * | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |'\0'|
+     * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+     * left_up   : [00, 12] (string)
+     * right_up  : [13, 15] (<=3 digit right-aligned integer)
+     * down      : [16, 31] (string)
+     */
+    /* Initialize the buffer to empty. */
     memset(value, ' ', 32);
     value[32] = '\0';
 
@@ -103,12 +117,17 @@ void lcd_write(const char *left_up, const int right_up,
         value[i] = left_up[i];
     /* Format the right_up integer and store in right_up_buf.
      * Copy the right_up_buf into the value buffer,
-     * starting at position 13(<=3 digit right-aligned number).
+     * starting at position 13(<=3 digit right-aligned integer).
      */
-    char right_up_buf[4]; /* Temporary buffer to hold the formatted right_up integer. */
-    snprintf(right_up_buf, 4, "%3d", right_up);
-    for (i = 13; i < 16; i++)
-        value[i] = right_up_buf[i - 13];
+    if (right_up != -1) /* If right_up is -1, it means the timer has ended,
+                         * so nothing will be filled.
+                         */
+    {
+        char right_up_buf[4]; /* Temporary buffer to hold the formatted right_up integer. */
+        snprintf(right_up_buf, 4, "%3d", right_up);
+        for (i = 13; i < 16; i++)
+            value[i] = right_up_buf[i - 13];
+    }
     /* Copy the down string into the value buffer, starting at position 16. */
     for (i = 16; i < 32 && down[i - 16] != '\0'; i++)
         value[i] = down[i - 16];
