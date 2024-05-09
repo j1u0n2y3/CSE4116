@@ -8,13 +8,17 @@
 #define IOCTL_SET_OPTION _IOW(MAJOR_NUM, 1, char *)
 #define IOCTL_COMMAND _IO(MAJOR_NUM, 2);
 
-#define NAME "JJY"
+#define STUDENT_NAME "JJY"
 #define STUDENT_ID "20211584"
 
 struct metadata
 {
+    /*** constant ***/
     int interval;
     int cnt;
+    int init_fnd_idx;
+    int init_symbol;
+    /*** inconstant(variable) ***/
     int elapsed;
     /* LCD */
     char left_up[14];
