@@ -10,7 +10,7 @@
 
 /* DOT MATRIX FONT */
 static const unsigned char dot_number[10][10] = {
-    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // blank
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // 0 (blank)
     {0x0c, 0x1c, 0x1c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x1e}, // 1
     {0x7e, 0x7f, 0x03, 0x03, 0x3f, 0x7e, 0x60, 0x60, 0x7f, 0x7f}, // 2
     {0xfe, 0x7f, 0x03, 0x03, 0x7f, 0x7f, 0x03, 0x03, 0x7f, 0x7e}, // 3
@@ -19,7 +19,7 @@ static const unsigned char dot_number[10][10] = {
     {0x60, 0x60, 0x60, 0x60, 0x7e, 0x7f, 0x63, 0x63, 0x7f, 0x3e}, // 6
     {0x7f, 0x7f, 0x63, 0x63, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03}, // 7
     {0x3e, 0x7f, 0x63, 0x63, 0x7f, 0x7f, 0x63, 0x63, 0x7f, 0x3e}, // 8
-    {0x3e, 0x7f, 0x63, 0x63, 0x7f, 0x3f, 0x03, 0x03, 0x03, 0x03}  // 9
+    {0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f}  // 9 (full)
 };
 
 /* Connect the physical address of the device to the virtual address of process
@@ -104,6 +104,7 @@ void lcd_write(const char *left_up, const int right_up,
      * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
      * | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |'\0'|
      * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+     *
      * left_up   : [00, 12] (string)
      * right_up  : [13, 15] (<=3 digit right-aligned integer)
      * down      : [16, 31] (string)
@@ -136,8 +137,9 @@ void lcd_write(const char *left_up, const int right_up,
     unsigned short int _s_value = 0;
     for (i = 0; i < 32; i += 2)
     {
-        /* Combine two adjacent characters into a short int and write to the LCD. */
         _s_value = (value[i] & 0xFF) << 8 | value[i + 1] & 0xFF;
-        outw(_s_value, (unsigned int)dev_addr[LCD] + i);
+        outw(_s_value, (unsigned int)dev_addr[LCD] + i); /* Combine two adjacent characters into
+                                                          * a short int and write it to the LCD.
+                                                          */
     }
 }

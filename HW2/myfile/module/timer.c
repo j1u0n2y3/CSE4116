@@ -18,14 +18,16 @@
 
 #include "core.h"
 
+/* TIMER */
 static TIMER timer_data;
-/* */
+/* 'already_open' flag for I/O(open) blocking */
 enum
 {
     NOT_USED = 0,
     EXCLUSIVE_OPEN = 1
 };
 static atomic_t already_open = ATOMIC_INIT(NOT_USED);
+/* Mutex semaphore to prevent ioctl command from exiting before the timer expires */
 struct semaphore TIMER_END;
 
 /* Replaced fop functions for device file HEADER */
@@ -52,6 +54,7 @@ static void timer_handler(unsigned long);
  * When a file operation is executed on the timer device file,
  * the corresponding (replaced) fop function is executed.
  */
+/* timer_open - Replace 'open' fop on device file. */
 static int timer_open(struct inode *inode, struct file *file)
 {
     if (atomic_cmpxchg(&already_open, NOT_USED, EXCLUSIVE_OPEN))
@@ -60,6 +63,7 @@ static int timer_open(struct inode *inode, struct file *file)
     return 0;
 }
 
+/* timer_close - Replace 'close' fop on device file. */
 static int timer_close(struct inode *inode, struct file *file)
 {
     atomic_set(&already_open, NOT_USED);
@@ -67,11 +71,14 @@ static int timer_close(struct inode *inode, struct file *file)
     return 0;
 }
 
+/* timer_read - Replace 'read' fop on device file. */
 static int timer_read(struct file *file, char __user *buffer, size_t length, loff_t *offset)
 {
+    /* Read the input from the RESET switch and return it. */
     return switch_read();
 }
 
+/* timer_ioctl - Replace 'ioctl' fop on device file. */
 static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
 {
     int i;
@@ -91,9 +98,10 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
     }
     case IOCTL_COMMAND:
     {
+        /* Reset and register timer. */
         del_timer_sync(&(timer_data.timer));
         timer_add();
-        down_interruptible(&TIMER_END);
+        down_interruptible(&TIMER_END); /* blocked until timer expires */
     }
     default:
     {
@@ -107,6 +115,7 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 /* 2. Interface/Utility functions for managing timer -
  * There are some interface functions to manage timer device.
  */
+/* timer_atoi - Simple kernel atoi. [ASCII string -> (unsigned) int] */
 static int timer_atoi(const char *str)
 {
     int i;
@@ -116,6 +125,7 @@ static int timer_atoi(const char *str)
     return res;
 }
 
+/* timer_metadata_init - Initialize timer's metadata(info field) based on option. */
 static void timer_metadata_init(const char *option)
 {
     int i;
@@ -153,6 +163,7 @@ static void timer_metadata_init(const char *option)
     timer_data.info = tmp;
 }
 
+/* timer_display - Display timer's metadata on FPGA devices. */
 static void timer_display()
 {
     fnd_write(timer_data.info.fnd_idx, timer_data.info.symbol);
@@ -161,53 +172,75 @@ static void timer_display()
     lcd_write(timer_data.info.left_up, timer_data.info.right_up, timer_data.info.down);
 }
 
+/* timer_add - Set timer field and register timer. */
 static void timer_add()
 {
-    timer_data.timer.expires = get_jiffies_64() + (timer_data.info.interval * HZ / 10);
+    timer_data.timer.expires = get_jiffies_64() +
+                               (timer_data.info.interval * HZ / 10); /* 0.1 * interval (sec) */
     timer_data.timer.data = (unsigned long)&timer_data;
     timer_data.timer.function = timer_handler;
     add_timer(&(timer_data.timer));
 }
 
+/* timer_handler - Timer handler called whenever the timer expires(timer->expires == get_jiffies_64()). */
 static void timer_handler(unsigned long timeout)
 {
     TIMER *cur_t = (TIMER *)timeout;
     struct metadata tmp = cur_t->info;
-    tmp.elapsed++;
 
+    /* elapsed proceeds :
+     * [1              ][2    ][3       )
+     * +----------------+------+-------->
+     * 0                cnt    cnt+3    INF
+     *
+     * Interval 1 : Section proceeding by user-specified number 'TIMER_CNT'.
+     * Interval 2 : 3-second notification section indicating that the timer will expire.
+     * Interval 3 : Expire timer. End routine.
+     */
+    tmp.elapsed++;
+    /* Interval 1 */
     if (tmp.elapsed < tmp.cnt)
     {
+        /* Update metadata (INCREASING TO TIMER_CNT). */
         tmp.right_up = tmp.cnt - tmp.elapsed;
-        if (++tmp.symbol == 9)
+        if (++tmp.symbol == 9) /* If symbol is out of range, rotate it. */
             tmp.symbol = 1;
-        if (tmp.elapsed % 8 == 0)
+        if (tmp.elapsed % 8 == 0) /* When symbol has completed one cycle,
+                                   * index moves on to the next.
+                                   */
             tmp.fnd_idx = (tmp.fnd_idx + 1) % 4;
-
+        /* Display the updated information and add the timer again. */
         timer_data.info = tmp;
         timer_display();
         timer_add();
     }
+    /* Interval 2 */
     else if (tmp.cnt <= tmp.elapsed &&
              tmp.elapsed < tmp.cnt + 3)
     {
+        /* Update metadata (EXPIRATION NOTIFICATION). */
         snprintf(tmp.left_up, 10, "Time's up!");
         tmp.right_up = 0;
         snprintf(tmp.down, 16, "Shutdown in %d...", 3 - (tmp.elapsed - tmp.cnt));
         tmp.fnd_idx = 0;
         tmp.symbol = 0;
-
+        /* Display the updated information and add the timer again. */
         timer_data.info = tmp;
         timer_display();
         timer_add();
     }
+    /* Interval 3 */
     else
     {
+        /* Update metadata (TURN-OFF ALL FPGA DEVICES). */
         snprintf(tmp.left_up, 1, " ");
         tmp.right_up = -1;
         snprintf(tmp.down, 1, " ");
         tmp.fnd_idx = 0;
         tmp.symbol = 0;
-
+        /* Display the updated information and do semaphore-up-operation
+         * to notify that the timer has expired completely and unblock module process.
+         */
         timer_data.info = tmp;
         timer_display();
         up(&TIMER_END);
@@ -217,25 +250,34 @@ static void timer_handler(unsigned long timeout)
 /* 3. Functions for module init/exit -
  * These functions are executed when this module(timer device driver) is installed/removed.
  */
+/* timer_init - insmod */
 static int __init timer_init()
 {
+    /* Register device driver module. */
     int res = register_chrdev(MAJOR_NUM, DEV_NAME, &timer_fops);
     if (res < 0)
     {
         printk("ERROR(timer.c) : register_chrdev failed\n");
         return -1;
     }
+    /* Initialize TIMER_END semaphore to 0. */
     sema_init(&TIMER_END, 0);
+    /* Initialize timer. */
     init_timer(&(timer_data.timer));
+    /* Map all FPGA devies. */
     map_device();
 
     return 0;
 }
 
+/* timer_exit - rmmod */
 static void __exit timer_exit()
 {
+    /* Unmap all FPGA devies. */
     unmap_device();
+    /* Remove timer. */
     del_timer_sync(&(timer_data.timer));
+    /* Unregister device driver module. */
     unregister_chrdev(MAJOR_NUM, DEV_NAME);
 }
 
