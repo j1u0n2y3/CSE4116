@@ -124,7 +124,7 @@ void lcd_write(const char *left_up, const int right_up,
                          * so nothing will be filled.
                          */
     {
-        char right_up_buf[4]; /* Temporary buffer to hold the formatted right_up integer. */
+        char right_up_buf[4]; /* temporary buffer to hold the formatted right_up integer */
         snprintf(right_up_buf, 4, "%3d", right_up);
         for (i = 13; i < 16; i++)
             value[i] = right_up_buf[i - 13];
@@ -135,11 +135,11 @@ void lcd_write(const char *left_up, const int right_up,
 
     /* Write value to LCD. */
     unsigned short int _s_value = 0;
-    for (i = 0; i < 32; i += 2)
+    for (i = 0; i < 32; i += 2) /* Combine two adjacent characters into
+                                 * a short int and write it to the LCD.
+                                 */
     {
         _s_value = (value[i] & 0xFF) << 8 | value[i + 1] & 0xFF;
-        outw(_s_value, (unsigned int)dev_addr[LCD] + i); /* Combine two adjacent characters into
-                                                          * a short int and write it to the LCD.
-                                                          */
+        outw(_s_value, (unsigned int)dev_addr[LCD] + i);
     }
 }

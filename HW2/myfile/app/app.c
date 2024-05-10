@@ -84,10 +84,10 @@ int main(int argc, char **argv)
     snprintf(option, 11, "%03d%03d%04d", interval, cnt, init);
     ioctl(timer_fd, IOCTL_SET_OPTION, option);
     /* Start timer when the RESET signal comes in. */
-    while (read(timer_fd, NULL, 0)) /* In device driver, .read fop returns true
-                                     * when the RESET signal comes in.
-                                     */
-        usleep(200000);
+    while (!read(timer_fd, NULL, 0)) /* In device driver, .read fop returns true
+                                      * when the RESET signal comes in.
+                                      */
+        usleep(200'000);
     ioctl(timer_fd, IOCTL_COMMAND);
 
     /* EXIT ROUTINE */

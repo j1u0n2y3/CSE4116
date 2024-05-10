@@ -1,6 +1,6 @@
 {
   "editor.tokenColorCustomizations": {
-    "comments": "#1eff00"
+    "comments": "#09ff00"
   },
   "files.associations": {
     "*.embeddedhtml": "html",

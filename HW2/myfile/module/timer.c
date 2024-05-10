@@ -57,8 +57,12 @@ static void timer_handler(unsigned long);
 /* timer_open - Replace 'open' fop on device file. */
 static int timer_open(struct inode *inode, struct file *file)
 {
+    /* Compare already_open flag with NOT_USED and set it to EXCLUSIVE_OPEN if equal;
+     * Otherwise, meaning that file is already opened, return error(-EBUSY).
+     */
     if (atomic_cmpxchg(&already_open, NOT_USED, EXCLUSIVE_OPEN))
         return -EBUSY;
+    /* Increase module usage. */
     try_module_get(THIS_MODULE);
     return 0;
 }
@@ -66,7 +70,9 @@ static int timer_open(struct inode *inode, struct file *file)
 /* timer_close - Replace 'close' fop on device file. */
 static int timer_close(struct inode *inode, struct file *file)
 {
+    /* Set already_open flag to NOT_USED */
     atomic_set(&already_open, NOT_USED);
+    /* Decrease module usage. */
     module_put(THIS_MODULE);
     return 0;
 }
@@ -86,6 +92,7 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
     {
     case IOCTL_SET_OPTION:
     {
+        /* Read the option from user pointer passed in. */
         char *u_option = (char *)ioctl_param;
         char tmp_buf[11] = {0};
         if (strncpy_from_user(tmp_buf, u_option, 10) < 0)
@@ -93,8 +100,12 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
             printk("ERROR(timer.c) : strncpy_from_user failed\n");
             return -1;
         }
+        /* Initialize timer's metadata(info field) based on the option,
+         * and display it on FPGA device.
+         */
         timer_metadata_init(tmp_buf);
         timer_display();
+        /* Timer's ready waiting for IOCTL_COMMAND! */
     }
     case IOCTL_COMMAND:
     {
@@ -103,18 +114,16 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
         timer_add();
         down_interruptible(&TIMER_END); /* blocked until timer expires */
     }
-    default:
+    default: /* unset numbers */
     {
-        printk("ERROR(timer.c) : unknown ioctl command\n");
+        printk("ERROR(timer.c) : unknown ioctl number\n");
         return -1;
     }
     }
     return 0;
 }
 
-/* 2. Interface/Utility functions for managing timer -
- * There are some interface functions to manage timer device.
- */
+/* 2. Interface/Utility functions for managing timer */
 /* timer_atoi - Simple kernel atoi. [ASCII string -> (unsigned) int] */
 static int timer_atoi(const char *str)
 {
@@ -132,6 +141,17 @@ static void timer_metadata_init(const char *option)
     char buf[5] = {0};
     int u_interval, u_cnt;
     char u_init[5] = {0};
+
+    /* option[11] :
+     * +----+----+----+----+----+----+----+----+----+----+----+
+     * | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 |'\0'|
+     * +----+----+----+----+----+----+----+----+----+----+----+
+     *
+     * interval   : [00, 02] (001 - 100)
+     * cnt        : [03, 05] (001 - 200)
+     * init       : [06, 09] (0001 - 8000)
+     */
+    /* Tokenize option. */
     /* interval */
     memcpy(buf, option, 3);
     u_interval = timer_atoi(buf);
@@ -141,6 +161,7 @@ static void timer_metadata_init(const char *option)
     /* init */
     memcpy(u_init, option + 6, 4);
 
+    /* Set timer's metadata. */
     struct metadata tmp;
     /* interval, cnt, elapsed */
     tmp.interval = u_interval;
@@ -159,7 +180,6 @@ static void timer_metadata_init(const char *option)
             tmp.symbol = u_init[i] - '0';
         }
     }
-
     timer_data.info = tmp;
 }
 
@@ -182,11 +202,10 @@ static void timer_add()
     add_timer(&(timer_data.timer));
 }
 
-/* timer_handler - Timer handler called whenever the timer expires(timer->expires == get_jiffies_64()). */
+/* timer_handler - Timer handler called whenever the timer expires(timer.expires == get_jiffies_64()). */
 static void timer_handler(unsigned long timeout)
 {
-    TIMER *cur_t = (TIMER *)timeout;
-    struct metadata tmp = cur_t->info;
+    struct metadata tmp = ((TIMER *)timeout)->info;
 
     /* elapsed proceeds :
      * [1              ][2    ][3       )

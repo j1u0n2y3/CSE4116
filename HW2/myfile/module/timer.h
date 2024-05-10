@@ -13,11 +13,11 @@
 struct metadata
 {
     /** constant **/
-    int interval;
-    int cnt;
+    int interval; /* TIMER_INTERVAL */
+    int cnt;      /* TIMER_CNT */
 
     /** inconstant(variable) **/
-    int elapsed;
+    int elapsed; /* elapsed time - increasing by 1 each time the timer expires */
     /* LCD */
     char left_up[14];
     int right_up;
