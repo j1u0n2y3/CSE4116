@@ -8,6 +8,24 @@
 
 #include "core.h"
 
+/* FPGA DEVICE DEFINITIONS */
+#define DEV_NUM 5 /* Number of devices supported */
+/* SWITCH */
+#define SWITCH 0
+#define SWITCH_PA 0x08000000 /* Device physical address for SWITCH */
+/* FND */
+#define FND 1
+#define FND_PA 0x08000004
+/* LED */
+#define LED 2
+#define LED_PA 0x08000016
+/* DOT */
+#define DOT 3
+#define DOT_PA 0x08000210
+/* LCD */
+#define LCD 4
+#define LCD_PA 0x08000090
+
 /* DOT MATRIX FONT */
 static const unsigned char dot_number[10][10] = {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // 0 (blank)
@@ -65,7 +83,7 @@ int switch_read()
     _s_dip_sw_value = inw((unsigned int)dev_addr[SWITCH]);
     dip_sw_value = _s_dip_sw_value & 0xFF;
     /* and return 1 if switch is on, 0 otherwise. */
-    if (dip_sw_value)
+    if (!dip_sw_value)
         return 1;
     else
         return 0;

@@ -7,7 +7,7 @@
 #define DEV_FILE_LOC "/dev/dev_driver"
 /* IOCTL NUMBERS */
 #define IOCTL_SET_OPTION _IOW(MAJOR_NUM, 1, char *)
-#define IOCTL_COMMAND _IO(MAJOR_NUM, 2);
+#define IOCTL_COMMAND _IO(MAJOR_NUM, 2)
 
 /* DATA(TIMER) STRUCTURE */
 struct metadata

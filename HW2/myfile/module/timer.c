@@ -47,7 +47,7 @@ static struct file_operations timer_fops = {
 static int timer_atoi(const char *);
 static void timer_metadata_init(const char *);
 static void timer_display();
-static void timer_add();
+static void timer_add(int);
 static void timer_handler(unsigned long);
 
 /* 1. Replaced fop functions for device file -
@@ -87,7 +87,6 @@ static int timer_read(struct file *file, char __user *buffer, size_t length, lof
 /* timer_ioctl - Replace 'ioctl' fop on device file. */
 static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
 {
-    int i;
     switch (ioctl_num)
     {
     case IOCTL_SET_OPTION:
@@ -106,13 +105,15 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
         timer_metadata_init(tmp_buf);
         timer_display();
         /* Timer's ready waiting for IOCTL_COMMAND! */
+        break;
     }
     case IOCTL_COMMAND:
     {
         /* Reset and register timer. */
         del_timer_sync(&(timer_data.timer));
-        timer_add();
+        timer_add(0);
         down_interruptible(&TIMER_END); /* blocked until timer expires */
+        break;
     }
     default: /* unset numbers */
     {
@@ -168,9 +169,9 @@ static void timer_metadata_init(const char *option)
     tmp.cnt = u_cnt;
     tmp.elapsed = 0;
     /* LCD fields */
-    snprintf(tmp.left_up, 8, "20211584");
+    snprintf(tmp.left_up, 9, "20211584 ");
     tmp.right_up = tmp.cnt - tmp.elapsed;
-    snprintf(tmp.down, 3, "JJY");
+    snprintf(tmp.down, 4, "JJY ");
     /* FND fields */
     for (i = 0; i < 4; i++)
     {
@@ -193,10 +194,13 @@ static void timer_display()
 }
 
 /* timer_add - Set timer field and register timer. */
-static void timer_add()
+static void timer_add(int flag)
 {
-    timer_data.timer.expires = get_jiffies_64() +
-                               (timer_data.info.interval * HZ / 10); /* 0.1 * interval (sec) */
+    if(flag) /* If timer expires, */
+        timer_data.timer.expires = get_jiffies_64() + HZ; /* 1 (sec) */
+    else     /* Otherwise, */
+        timer_data.timer.expires = get_jiffies_64() +
+                                   (timer_data.info.interval * HZ / 10); /* 0.1 * interval (sec) */
     timer_data.timer.data = (unsigned long)&timer_data;
     timer_data.timer.function = timer_handler;
     add_timer(&(timer_data.timer));
@@ -231,22 +235,22 @@ static void timer_handler(unsigned long timeout)
         /* Display the updated information and add the timer again. */
         timer_data.info = tmp;
         timer_display();
-        timer_add();
+        timer_add(0);
     }
     /* Interval 2 */
     else if (tmp.cnt <= tmp.elapsed &&
              tmp.elapsed < tmp.cnt + 3)
     {
         /* Update metadata (EXPIRATION NOTIFICATION). */
-        snprintf(tmp.left_up, 10, "Time's up!");
+        snprintf(tmp.left_up, 11, "Time's up! ");
         tmp.right_up = 0;
-        snprintf(tmp.down, 16, "Shutdown in %d...", 3 - (tmp.elapsed - tmp.cnt));
+        snprintf(tmp.down, 17, "Shutdown in %d... ", 3 - (tmp.elapsed - tmp.cnt));
         tmp.fnd_idx = 0;
         tmp.symbol = 0;
         /* Display the updated information and add the timer again. */
         timer_data.info = tmp;
         timer_display();
-        timer_add();
+        timer_add(1);
     }
     /* Interval 3 */
     else

@@ -11,9 +11,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-// #include <ctype.h>
-// #include <sys/stat.h>
-// #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <linux/ioctl.h>
 
@@ -21,7 +18,7 @@
 #define DEV_FILE_LOC "/dev/dev_driver"
 
 #define IOCTL_SET_OPTION _IOW(MAJOR_NUM, 1, char *)
-#define IOCTL_COMMAND _IO(MAJOR_NUM, 2);
+#define IOCTL_COMMAND _IO(MAJOR_NUM, 2)
 
 int main(int argc, char **argv)
 {
@@ -87,7 +84,7 @@ int main(int argc, char **argv)
     while (!read(timer_fd, NULL, 0)) /* In device driver, .read fop returns true
                                       * when the RESET signal comes in.
                                       */
-        usleep(200'000);
+        usleep(200000);
     ioctl(timer_fd, IOCTL_COMMAND);
 
     /* EXIT ROUTINE */
