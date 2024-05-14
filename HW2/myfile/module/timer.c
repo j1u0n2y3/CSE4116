@@ -26,6 +26,11 @@ enum
     NOT_USED = 0,
     EXCLUSIVE_OPEN = 1
 };
+enum
+{
+    TIMER_PROG = 0,
+    TIMER_EXPIRE = 1
+};
 static atomic_t already_open = ATOMIC_INIT(NOT_USED);
 /* Mutex semaphore to prevent ioctl command from exiting before the timer expires */
 struct semaphore TIMER_END;
@@ -111,7 +116,7 @@ static long timer_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
     {
         /* Reset and register timer. */
         del_timer_sync(&(timer_data.timer));
-        timer_add(0);
+        timer_add(TIMER_PROG);
         down_interruptible(&TIMER_END); /* blocked until timer expires */
         break;
     }
@@ -196,9 +201,9 @@ static void timer_display()
 /* timer_add - Set timer field and register timer. */
 static void timer_add(int flag)
 {
-    if(flag) /* If timer expires, */
+    if (flag == TIMER_EXPIRE) /* If timer expires, */
         timer_data.timer.expires = get_jiffies_64() + HZ; /* 1 (sec) */
-    else     /* Otherwise, */
+    else                      /* Otherwise, */
         timer_data.timer.expires = get_jiffies_64() +
                                    (timer_data.info.interval * HZ / 10); /* 0.1 * interval (sec) */
     timer_data.timer.data = (unsigned long)&timer_data;
@@ -235,7 +240,7 @@ static void timer_handler(unsigned long timeout)
         /* Display the updated information and add the timer again. */
         timer_data.info = tmp;
         timer_display();
-        timer_add(0);
+        timer_add(TIMER_PROG);
     }
     /* Interval 2 */
     else if (tmp.cnt <= tmp.elapsed &&
@@ -250,7 +255,7 @@ static void timer_handler(unsigned long timeout)
         /* Display the updated information and add the timer again. */
         timer_data.info = tmp;
         timer_display();
-        timer_add(1);
+        timer_add(TIMER_EXPIRE);
     }
     /* Interval 3 */
     else

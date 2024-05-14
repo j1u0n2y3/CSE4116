@@ -1,5 +1,5 @@
-obj-m	:= dev_driver.o
 dev_driver-objs := device.o timer.o
+obj-m	:= dev_driver.o
 
 default:
 	$(MAKE) -C /work/achroimx_kernel SUBDIRS=$(shell pwd) modules ARCH=arm
