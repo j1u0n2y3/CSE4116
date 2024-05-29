@@ -19,7 +19,6 @@
 #include <mach/gpio.h>
 
 #include "device.h"
-#include "intr.h"
 #include "stopwatch.h"
 
 #endif /* _CORE_H_ */
