@@ -7,6 +7,35 @@
 
 #include "core.h"
 
+/* HEADER 1: replaced fop functions for device file */
+static int stopwatch_open(struct inode *, struct file *);
+static int stopwatch_close(struct inode *, struct file *);
+static int stopwatch_read(struct file *, char __user *, size_t, loff_t *);
+static int stopwatch_write(struct file *, const char __user *, size_t, loff_t *);
+static struct file_operations stopwatch_fops = {
+    .owner = THIS_MODULE,
+    .open = stopwatch_open,
+    .release = stopwatch_close,
+    .read = stopwatch_read,
+    .write = stopwatch_write,
+};
+
+/* HEADER 2: interface/utility functions for managing stopwatch */
+static void stopwatch_display();
+static void stopwatch_add();
+static void stopwatch_handler(unsigned long);
+
+/* HEADER 3: interrupt control functions */
+void intr_init();
+void intr_free();
+void stop_timer_handler(unsigned long);
+void stop_timer_add();
+irqreturn_t btn_home_handler(int, void *);
+irqreturn_t btn_back_handler(int, void *);
+irqreturn_t btn_vol_up_handler(int, void *);
+irqreturn_t btn_vol_down_handler(int, void *);
+void wq_handler(struct work_struct *);
+
 /* STOPWATCH */
 static STOPWATCH stopwatch;
 /* timer to check if the stop button is pressed for 3 seconds */
@@ -21,44 +50,12 @@ static atomic_t already_open = ATOMIC_INIT(NOT_USED);
 /* mutex semaphore to prevent user process from exiting before the stopwatch ends */
 struct semaphore STOPWATCH_QUIT;
 
-/* HEADER: replaced fop functions for device file */
-static int stopwatch_open(struct inode *, struct file *);
-static int stopwatch_close(struct inode *, struct file *);
-static int stopwatch_read(struct file *, char __user *, size_t, loff_t *);
-static int stopwatch_write(struct file *, const char __user *, size_t, loff_t *);
-static struct file_operations stopwatch_fops = {
-    .owner = THIS_MODULE,
-    .open = stopwatch_open,
-    .release = stopwatch_close,
-    .read = stopwatch_read,
-    .write = stopwatch_write,
-};
-
-/* HEADER: interface/utility functions for managing stopwatch */
-static void stopwatch_display();
-static void stopwatch_add();
-static void stopwatch_handler(unsigned long);
-
 /* BUTTON DEFINITIONS */
 #define BTN_NUM 4
 #define BTN_HOME 0
 #define BTN_BACK 1
 #define BTN_VOL_UP 2
 #define BTN_VOL_DOWN 3
-
-/* HEADER: interrupt control functions */
-void intr_init();
-void intr_free();
-void stop_timer_handler(unsigned long timeout);
-void stop_timer_add();
-irqreturn_t btn_home_handler(int, void *);
-irqreturn_t btn_back_handler(int, void *);
-irqreturn_t btn_vol_up_handler(int, void *);
-irqreturn_t btn_vol_down_handler(int, void *);
-void wq_handler(struct work_struct *);
-
-/* HEADER: button interrupt handler functions */
-
 /* button informations for gpio */
 static unsigned int btn_gpio[BTN_NUM] = {
     IMX_GPIO_NR(1, 11),
@@ -84,7 +81,6 @@ static const char *btn_name[BTN_NUM] = {
     "BTN#VOL+",
     "BTN#VOL-",
 };
-
 /* work queue for bottom half */
 static struct workqueue_struct *wqueue = NULL;
 typedef struct _BTN_WORK
@@ -92,8 +88,6 @@ typedef struct _BTN_WORK
     struct work_struct work;
     int type;
 } BTN_WORK;
-
-/* HEADER: interrupt control functions */
 
 /* 1. replaced fop functions for device file -
  * When a file operation is executed on the timer device file,
@@ -169,7 +163,9 @@ static void stopwatch_handler(unsigned long timeout)
     stopwatch_add();
 }
 
-/* 3. interrupt control functions */
+/* 3. interrupt control functions -
+ *
+ */
 void intr_init()
 {
     int i;
