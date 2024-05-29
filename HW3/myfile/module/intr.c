@@ -1,5 +1,7 @@
 #include "core.h"
 
+static struct timer_list stop_timer;
+
 #define BTN_NUM 4
 #define BTN_HOME 0
 #define BTN_BACK 1
@@ -53,6 +55,7 @@ void intr_init()
         request_irq(gpio_to_irq(btn_gpio[i]), btn_handler[i], btn_flag[i], btn_name[i], 0);
     }
     wqueue = create_workqueue("STOPWATCH_WQ");
+    init_timer(&stop_timer);
 }
 
 void intr_free()
@@ -62,6 +65,24 @@ void intr_free()
         free_irq(gpio_to_irq(btn_gpio[i]), NULL);
     flush_workqueue(wqueue);
     destroy_workqueue(wqueue);
+    del_timer_sync(&stop_timer);
+}
+
+void stop_timer_handler(unsigned long timeout)
+{
+    del_timer(&stopwatch);
+    stopwatch.elapsed = TIME_LIMIT;
+    stopwatch_display();
+    up(&STOPWATCH_QUIT);
+    return;
+}
+
+void stop_timer_add()
+{
+    stop_timer.expires = get_jiffies_64() + (HZ * 3);
+    stop_timer.data = NULL;
+    stop_timer.function = stop_timer_handler;
+    add_timer(&stop_timer);
 }
 
 irqreturn_t btn_home_handler(int irq, void *data)
@@ -76,6 +97,7 @@ irqreturn_t btn_home_handler(int irq, void *data)
         home_work->type = BTN_HOME;
         queue_work(wqueue, (struct work_struct *)home_work);
     }
+    return IRQ_HANDLED;
 }
 
 irqreturn_t btn_back_handler(int irq, void *data)
@@ -91,6 +113,7 @@ irqreturn_t btn_back_handler(int irq, void *data)
         back_work->type = BTN_BACK;
         queue_work(wqueue, (struct work_struct *)back_work);
     }
+    return IRQ_HANDLED;
 }
 
 irqreturn_t btn_vol_up_handler(int irq, void *data)
@@ -107,6 +130,7 @@ irqreturn_t btn_vol_up_handler(int irq, void *data)
         vol_up_work->type = BTN_VOL_UP;
         queue_work(wqueue, (struct work_struct *)vol_up_work);
     }
+    return IRQ_HANDLED;
 }
 
 static int vol_down_pressed = 0;
@@ -127,6 +151,7 @@ irqreturn_t btn_vol_down_handler(int irq, void *data)
         vol_down_work->type = BTN_VOL_DOWN + vol_down_pressed;
         queue_work(wqueue, (struct work_struct *)vol_down_work);
     }
+    return IRQ_HANDLED;
 }
 
 static unsigned int intr_cnt = 0;

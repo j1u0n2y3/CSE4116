@@ -1,4 +1,4 @@
-dev_driver-objs := device.o stopwatch.o intr.o
+dev_driver-objs := device.o stopwatch.o
 obj-m	:= dev_driver.o
 
 default:

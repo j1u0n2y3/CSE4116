@@ -11,14 +11,7 @@ typedef struct _STOPWATCH
 {
     struct timer_list timer;
     int elapsed;
-    int paused, reset;
-    int stopped;
+    int reset, paused;
 } STOPWATCH;
-
-/* STOPWATCH */
-static STOPWATCH stopwatch;
-
-#define TIME_LIMIT (100 * 60 * 10)
-#define STOP_NOT_PRESSED (TIME_LIMIT - 31)
 
 #endif /* _STOPWATCH_H_ */
