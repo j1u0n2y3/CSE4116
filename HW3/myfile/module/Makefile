@@ -1,5 +1,5 @@
-dev_driver-objs := device.o stopwatch.o
-obj-m	:= dev_driver.o
+obj-m	:= stopwatch.o
+stopwatch-objs := device.o module.o
 
 default:
 	$(MAKE) -C /work/achroimx_kernel SUBDIRS=$(shell pwd) modules ARCH=arm

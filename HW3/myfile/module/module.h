@@ -1,5 +1,5 @@
-#ifndef _STOPWATCH_H_
-#define _STOPWATCH_H_
+#ifndef _MODULE_H_
+#define _MODULE_H_
 
 /* TIMER DEVICE DEFINITIONS */
 #define MAJOR_NUM 242
@@ -14,4 +14,7 @@ typedef struct _STOPWATCH
     int reset, paused;
 } STOPWATCH;
 
-#endif /* _STOPWATCH_H_ */
+/* STOPWATCH TIME LIMIT */
+#define TIME_LIMIT (100 * 60 * 10)
+
+#endif /* _MODULE_H_ */

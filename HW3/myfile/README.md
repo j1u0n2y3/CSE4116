@@ -1,6 +1,6 @@
-# HW2 | Timer Device Driver and Application
+# HW3 | Stopwatch Device Driver and Application
 
-This project is the second assignment for the Embedded System Software course, focusing on developing a timer device driver module to control FPGA devices and timer, alongside an application program to control the timer device.
+This project is the third assignment for the Embedded System Software course, focusing on developing a stopwatch device driver module to control FPGA devices and timer, alongside an application program to control the stopwatch device.
 
 ## Installing and Removing
 
@@ -44,13 +44,13 @@ After pushing the module program file to the FPGA board, you need to insert the 
 1. Insert the module into the kernel:
 
    ```bash
-   insmod dev_driver.ko
+   insmod stopwatch.ko
    ```
 
 2. Create the device file:
 
    ```bash
-   mknod /dev/dev_driver c 242 0
+   mknod /dev/stopwatch c 242 0
    ```
 
 ### Removing the module
@@ -59,12 +59,12 @@ If you wish to remove the module from the kernel, follow these steps:
 
 1. (Optional) Remove the device file:
    ```bash
-   rm /dev/dev_driver
+   rm /dev/stopwatch
    ```
 
 2. Remove the module from the kernel:
    ```bash
-   rmmod dev_driver
+   rmmod stopwatch
    ```
 
 ## Note

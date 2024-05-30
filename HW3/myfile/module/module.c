@@ -1,6 +1,18 @@
 /*
- * timer.c -
+ * module.c -
+ * This source code is for a Linux kernel module that implements a stopwatch device driver.
+ * It includes (1)replaced fop functions for device file,
+ *             (2)interface/utility functions for managing timer,
+ *             (3)interrupt control functions,
+ *             (4)functions for module init/exit.
  *
+ * To install this module, the following steps need to be taken:
+ *             $ insmod stopwatch.ko
+ *             $ mknod /dev/stopwatch c 242 0
+ *
+ * To remove this module, the following steps need to be taken:
+ * (optional)  $ rm /dev/stopwatch
+ *             $ rmmod stopwatch
  *
  * Author : 20211584 Junyeong JANG
  */
@@ -26,15 +38,15 @@ static void stopwatch_add();
 static void stopwatch_handler(unsigned long);
 
 /* HEADER 3: interrupt control functions */
-void intr_init();
-void intr_free();
-void stop_timer_handler(unsigned long);
-void stop_timer_add();
-irqreturn_t btn_home_handler(int, void *);
-irqreturn_t btn_back_handler(int, void *);
-irqreturn_t btn_vol_up_handler(int, void *);
-irqreturn_t btn_vol_down_handler(int, void *);
-void wq_handler(struct work_struct *);
+static void intr_init();
+static void intr_free();
+static void stop_timer_handler(unsigned long);
+static void stop_timer_add();
+static irqreturn_t btn_home_handler(int, void *);
+static irqreturn_t btn_back_handler(int, void *);
+static irqreturn_t btn_vol_up_handler(int, void *);
+static irqreturn_t btn_vol_down_handler(int, void *);
+static void wq_handler(struct work_struct *);
 
 /* STOPWATCH */
 static STOPWATCH stopwatch;
@@ -90,7 +102,7 @@ typedef struct _BTN_WORK
 } BTN_WORK;
 
 /* 1. replaced fop functions for device file -
- * When a file operation is executed on the timer device file,
+ * When a file operation is executed on the stopwatch device file,
  * the corresponding (replaced) fop function is executed.
  */
 /* stopwatch_open - Replace 'open' fop on device file. */
@@ -115,7 +127,7 @@ static int stopwatch_close(struct inode *inode, struct file *file)
     atomic_set(&already_open, NOT_USED);
     /* Decrease module usage. */
     module_put(THIS_MODULE);
-    /* Release interrupts and destroy workqueue. */
+    /* Free IRQs and destroy workqueue. */
     intr_free();
     return 0;
 }
@@ -123,6 +135,7 @@ static int stopwatch_close(struct inode *inode, struct file *file)
 /* stopwatch_read - Replace 'read' fop on device file. */
 static int stopwatch_read(struct file *file, char __user *buffer, size_t length, loff_t *offset)
 {
+    /* Initialize stopwatch fields. */
     stopwatch.elapsed = 0;
     stopwatch.reset = 1;
     stopwatch.paused = 0;
@@ -133,8 +146,9 @@ static int stopwatch_read(struct file *file, char __user *buffer, size_t length,
 static int stopwatch_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
 {
     del_timer_sync(&(stopwatch.timer));
-    down_interruptible(&STOPWATCH_QUIT);
-
+    /* Update the displays. */
+    stopwatch_display();
+    down_interruptible(&STOPWATCH_QUIT); /* blocked until the stopwatch ends */
     return 1;
 }
 
@@ -146,7 +160,7 @@ static void stopwatch_display()
     dot_write(stopwatch.elapsed);
 }
 
-/* stopwatch_add - Set timer field and register timer. */
+/* stopwatch_add - Set stopwatch's timer fields and register timer. */
 static void stopwatch_add()
 {
     stopwatch.timer.expires = get_jiffies_64() + (HZ / 10);
@@ -155,83 +169,132 @@ static void stopwatch_add()
     add_timer(&(stopwatch.timer));
 }
 
-/* stopwatch_handler - Timer handler called whenever the timer expires(timer.expires == get_jiffies_64()). */
+/* stopwatch_handler - Timer handler called whenever the stopwatch's timer expires(timer.expires == get_jiffies_64()). */
 static void stopwatch_handler(unsigned long timeout)
 {
     stopwatch.elapsed++;
+    /* End the stopwatch when the time limit is reached. */
+    if(stopwatch.elapsed >= TIME_LIMIT)
+    {
+        stopwatch.elapsed = TIME_LIMIT;
+        stopwatch_display();
+        up(&STOPWATCH_QUIT);
+        return;
+    }
+    /* Update the displays and add timer. */
     stopwatch_display();
     stopwatch_add();
 }
 
 /* 3. interrupt control functions -
- *
+ * These functions manage interrupts and perform the appropriate actions accordingly.
  */
-void intr_init()
+static unsigned int intr_cnt = 0; /* count how many times interrupt was called */
+static int vol_down_pressed = 0; /* check if the vol down button is pressed or released */
+
+/* intr_init - Initialize interrupts, workqueue, and timer. */
+static void intr_init()
 {
     int i;
     for (i = 0; i < BTN_NUM; i++)
     {
+        /* Set GPIO direction to input. */
         gpio_direction_input(btn_gpio[i]);
+        /* Request IRQ for each button. */
         request_irq(gpio_to_irq(btn_gpio[i]), btn_handler[i], btn_flag[i], btn_name[i], 0);
     }
+    /* Create workqueue. */
     wqueue = create_workqueue("STOPWATCH_WQ");
+    /* Initialize stop_timer. */
     init_timer(&stop_timer);
+    /* Initialize variables. */
+    intr_cnt = 0;
+    vol_down_pressed = 0;
 }
 
-void intr_free()
+/* intr_free - Free interrupts, workqueue, and timer. */
+static void intr_free()
 {
     int i;
     for (i = 0; i < BTN_NUM; i++)
+        /* Free IRQ for each button. */
         free_irq(gpio_to_irq(btn_gpio[i]), NULL);
+    /* Flush and destroy workqueue. */
     flush_workqueue(wqueue);
     destroy_workqueue(wqueue);
+    /* Delete stop_timer. */
     del_timer_sync(&stop_timer);
+    /* Initialize variables. */
+    intr_cnt = 0;
+    vol_down_pressed = 0;
 }
 
-void stop_timer_handler(unsigned long timeout)
+/* stop_timer_handler - Timer handler for stop_timer. */
+static void stop_timer_handler(unsigned long timeout)
 {
+    /* Delete stop_timer. */
     del_timer_sync(&(stopwatch.timer));
+    /* Set stopwatch's elapsed time to limit to notice the end of the program
+     * and update the displays.
+     */
     stopwatch.elapsed = TIME_LIMIT;
     stopwatch_display();
+    /* Do semaphore-up-operation to wake up the process. */
     up(&STOPWATCH_QUIT);
 }
 
-void stop_timer_add()
+/* stop_timer_add - Add stop_timer with a 3-second expiration. */
+static void stop_timer_add()
 {
-    stop_timer.expires = get_jiffies_64() + (3 * HZ);
+    stop_timer.expires = get_jiffies_64() + (3 * HZ); /* 3 (sec) */
     stop_timer.data = NULL;
     stop_timer.function = stop_timer_handler;
+    /* Add the timer. */
     add_timer(&stop_timer);
 }
 
-irqreturn_t btn_home_handler(int irq, void *data)
+/* btn_home_handler - Interrupt handler for the home button. */
+static irqreturn_t btn_home_handler(int irq, void *data)
 {
-    /* TOP HALF */
+    /* TOP HALF - Handle real-time critical behaviors. */
     if (!stopwatch.paused && stopwatch.reset)
     {
+        /* Start or restart the stopwatch from reset state. */
         stopwatch_add();
+        /* Set the reset flag to false. */
         stopwatch.reset = 0;
     }
-    /* BOTTOM HALF */
+    /* BOTTOM HALF - Use workqueue to handle operations that take too long to be processed in the interrupt handler
+     * and for which is not very real-time critical.
+     */
+    /* Allocate memory for bottom half work. */
     BTN_WORK *home_work = (BTN_WORK *)kmalloc(sizeof(BTN_WORK), GFP_KERNEL);
     if (home_work)
     {
+        /* Initialize work. */
         INIT_WORK((struct work_struct *)home_work, wq_handler);
+        /* Set the button type. */
         home_work->type = BTN_HOME;
+        /* Queue work to workqueue. */
         queue_work(wqueue, (struct work_struct *)home_work);
     }
     return IRQ_HANDLED;
+    /* All other interrupt handlers follow the same process. */
 }
 
-irqreturn_t btn_back_handler(int irq, void *data)
+/* btn_back_handler - Interrupt handler for the back button. */
+static irqreturn_t btn_back_handler(int irq, void *data)
 {
     /* TOP HALF */
     if (!stopwatch.reset)
     {
         if (stopwatch.paused)
+            /* Add the timer for progress. */
             stopwatch_add();
         else
+            /* Delete the timer for pausing. */
             del_timer_sync(&(stopwatch.timer));
+        /* Toggle the paused/progress state. */
         stopwatch.paused = 1 - stopwatch.paused;
     }
     /* BOTTOM HALF */
@@ -245,13 +308,17 @@ irqreturn_t btn_back_handler(int irq, void *data)
     return IRQ_HANDLED;
 }
 
-irqreturn_t btn_vol_up_handler(int irq, void *data)
+/* btn_vol_up_handler - Interrupt handler for the volume up button. */
+static irqreturn_t btn_vol_up_handler(int irq, void *data)
 {
     /* TOP HALF */
+    /* Delete the timer for reset. */
     del_timer_sync(&(stopwatch.timer));
+    /* Initialize stopwatch fields. */
     stopwatch.elapsed = 0;
     stopwatch.reset = 1;
     stopwatch.paused = 0;
+    /* Update the displays. */
     stopwatch_display();
     /* BOTTOM HALF */
     BTN_WORK *vol_up_work = (BTN_WORK *)kmalloc(sizeof(BTN_WORK), GFP_KERNEL);
@@ -264,15 +331,18 @@ irqreturn_t btn_vol_up_handler(int irq, void *data)
     return IRQ_HANDLED;
 }
 
-static int vol_down_pressed = 0;
-irqreturn_t btn_vol_down_handler(int irq, void *data)
+/* btn_vol_down_handler - Interrupt handler for the volume down button. */
+static irqreturn_t btn_vol_down_handler(int irq, void *data)
 {
     /* TOP HALF */
+    /* Toggle the pressed/released state. */
     vol_down_pressed = 1 - vol_down_pressed;
     if (vol_down_pressed)
-        stop_timer_add();
+        stop_timer_add(); /* Add stop_timer to time how long the vol down button is pressed. */
     else
-        del_timer_sync(&stop_timer);
+        del_timer_sync(&stop_timer); /* Delete the stop_timer 
+                                      * because the button was released before 3 seconds.
+                                      */
     /* BOTTOM HALF */
     BTN_WORK *vol_down_work = (BTN_WORK *)kmalloc(sizeof(BTN_WORK), GFP_KERNEL);
     if (vol_down_work)
@@ -284,10 +354,12 @@ irqreturn_t btn_vol_down_handler(int irq, void *data)
     return IRQ_HANDLED;
 }
 
-static unsigned int intr_cnt = 0;
-void wq_handler(struct work_struct *work)
+/* wq_handler - Handle the work in the workqueue. */
+static void wq_handler(struct work_struct *work)
 {
+    /* Print interrupt count. */
     printk(KERN_INFO "[INTR %u] ", ++intr_cnt);
+    /* Print which button was pressed. */
     switch (((BTN_WORK *)work)->type)
     {
     case BTN_HOME:
@@ -308,11 +380,12 @@ void wq_handler(struct work_struct *work)
     default:
         break;
     }
+    /* Free allocated memory for work. */
     kfree((BTN_WORK *)work);
 }
 
-/* 3. functions for module init/exit -
- * These functions are executed when this module(timer device driver) is installed/removed.
+/* 4. functions for module init/exit -
+ * These functions are executed when this module(stopwatch device driver) is installed/removed.
  */
 /* stopwatch_init - insmod */
 static int __init stopwatch_init()
@@ -325,7 +398,7 @@ static int __init stopwatch_init()
         return -1;
     }
     /* Initialize stopwatch_END semaphore to 0. */
-    sema_init(&stopwatch_END, 0);
+    sema_init(&STOPWATCH_QUIT, 0);
     /* Initialize timer. */
     init_timer(&(stopwatch.timer));
     /* Map all FPGA devies. */

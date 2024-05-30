@@ -1,6 +1,7 @@
 /*
  * device.c -
- *
+ * This source file contains functions to map/unmap physical addresses of various devices
+ * to virtual addresses and perform formatted write operations on these devices.
  *
  * Author : 20211584 Junyeong JANG
  */
