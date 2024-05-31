@@ -27,6 +27,10 @@ void output_process()
                 led_mm(0x80);
                 break;
             }
+            // ...
+
+
+
             case PUT_KEY:
             {
                 led_mm(0x20);
@@ -115,13 +119,6 @@ void output_process()
             perror("ERROR(output_process.c) : msgrcv failed.\n");
             _exit(-1);
         }
-        
-        /*
-        printf("**********************************************\n");
-        printf("* cur mode : %d\n", output->cur_mode);
-        printf("* fnd : %d\n", output->fnd);
-        printf("* lcd2 : %s\n", output->lcd2);
-        */
 
         if (output->_BACK_)
         {
@@ -133,7 +130,6 @@ void output_process()
             output_reset();
             continue;
         }
-
         if (prev_mode != output->cur_mode)
         {
             led->cur_mode = output->cur_mode;
@@ -143,7 +139,6 @@ void output_process()
                 _exit(-1);
             }
         }
-
         fnd_dd(output->fnd);
         switch (output->cur_mode)
         {

@@ -38,7 +38,7 @@ void input_process()
     close(readkey_fd);
     close(switch_fd);
     close(reset_fd);
-    
+
     free(input);
 
     printf("END : input process\n");
@@ -109,8 +109,10 @@ void input_reset(int fd, struct input_msg *msg)
         perror("ERROR(input_process.c) : reset read failed.\n");
         _exit(-1);
     }
-    if (buf == 0 /* find and fill!! */)
+    if (buf == 0)
         msg->reset_input = true;
     else
         msg->reset_input = false;
 }
+
+

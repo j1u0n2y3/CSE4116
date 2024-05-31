@@ -1,16 +1,14 @@
-default: app.c
-	@echo ">> Compiling app.c..."
+default:
 	arm-none-linux-gnueabi-gcc -static -o app app.c
-	@echo ">> app.c has been compiled into 'app' binary."
 
 push:
 	@echo ">> Pushing the app to /data/local/tmp on the device..."
+	make clean
+	make
 	adb push app /data/local/tmp
 	@echo ">> The app has been pushed to /data/local/tmp on the device."
 
 clean:
-	@echo ">> Cleaning up..."
 	rm -rf app
-	@echo ">> Cleanup complete. The 'app' binary has been removed."
 
 .PHONY: push clean

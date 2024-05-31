@@ -497,37 +497,21 @@ void main_flush(struct table_elem *mem_table, int mem_table_cnt, bool _BACK_, bo
         while ((entry = readdir(dir)) != NULL)
         {
             if (!strcmp(entry->d_name, "1.st"))
-            {
                 file1Exists = 1;
-            }
             else if (!strcmp(entry->d_name, "2.st"))
-            {
                 file2Exists = 1;
-            }
             else if (!strcmp(entry->d_name, "3.st"))
-            {
                 file3Exists = 1;
-            }
         }
 
         closedir(dir);
 
         if (!file1Exists)
-        {
             snprintf(filePath, sizeof(filePath), "%s/1.st", dirPath);
-        }
         else if (!file2Exists)
-        {
             snprintf(filePath, sizeof(filePath), "%s/2.st", dirPath);
-        }
         else if (!file3Exists)
-        {
             snprintf(filePath, sizeof(filePath), "%s/3.st", dirPath);
-        }
-        else
-        {
-            return;
-        }
 
         file = fopen(filePath, "w");
         if (file == NULL)
@@ -563,7 +547,8 @@ void main_get(char *key_buf, char *val_buf, struct table_elem *mem_table)
 
     if (findValueByKey("storage_files/2.st", key, val_buf))
         return;
-    findValueByKey("storage_files/1.st", key, val_buf);
+    if(findValueByKey("storage_files/1.st", key, val_buf))
+        memcpy(val_buf, "ERROR              ", 16);
 }
 
 bool findValueByKey(const char *filename, int searchKey, char *result)

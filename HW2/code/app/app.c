@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 
     /* TIMER DEVICE ROUTINE */
     /* Open timer device file. */
-    int timer_fd = open(DEV_FILE_LOC, O_WRONLY);
+    int timer_fd = open(DEV_FILE_LOC, O_RDWR);
     if (timer_fd == -1)
     {
         printf("ERROR(app.c) : timer device file open failed\n");
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     while (!read(timer_fd, NULL, 0)) /* In device driver, .read fop returns true
                                       * when the RESET signal comes in.
                                       */
-        usleep(200000);
+        usleep(100000);
     ioctl(timer_fd, IOCTL_COMMAND);
 
     /* EXIT ROUTINE */

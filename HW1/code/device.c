@@ -1,3 +1,4 @@
+
 #include "device.h"
 
 void fnd_dd(int fnd_data)

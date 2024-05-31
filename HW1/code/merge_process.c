@@ -68,10 +68,11 @@ int file_count(const char *dirPath)
 void merge_files(const char *dirPath)
 {
     motor_dd(MOTOR_ON);
+
     char file1Path[256], file2Path[256], file3Path[256], tmpFilePath[256];
     struct stat st;
     int file1Exists = 0, file2Exists = 0, file3Exists = 0;
-    int fileCount = 0; 
+    int fileCount = 0;
 
     snprintf(file1Path, sizeof(file1Path), "%s/1.st", dirPath);
     snprintf(file2Path, sizeof(file2Path), "%s/2.st", dirPath);
@@ -87,9 +88,7 @@ void merge_files(const char *dirPath)
     fileCount += file3Exists ? 1 : 0;
 
     if (fileCount == 1)
-    {
         return;
-    }
 
     FILE *tmpFile = fopen(tmpFilePath, "w");
     if (!tmpFile)
@@ -98,7 +97,9 @@ void merge_files(const char *dirPath)
         exit(EXIT_FAILURE);
     }
 
-    mergeAndSaveRecords("storage_files/1.st", "storage_files/2.st", "storage_files/tmp.st");
+    mergeAndSaveRecords("storage_files/1.st",
+                        "storage_files/2.st",
+                        "storage_files/tmp.st");
     fclose(tmpFile);
 
     if (file1Exists && file2Exists && !file3Exists)
@@ -149,7 +150,7 @@ void readRecordsFromFile(const char *filename, Record **records, int *count)
 
 void mergeAndSaveRecords(const char *inputFile1, const char *inputFile2, const char *outputFile)
 {
-    Record *records = malloc(sizeof(Record) * 2000); 
+    Record *records = malloc(sizeof(Record) * 2000);
     int count = 0;
 
     readRecordsFromFile(inputFile1, &records, &count);
@@ -168,12 +169,13 @@ void mergeAndSaveRecords(const char *inputFile1, const char *inputFile2, const c
     for (i = 0; i < count; i++)
     {
         if (i < count - 1 && records[i].key == records[i + 1].key)
-        {
             continue;
-        }
         fprintf(outFile, "%d %d %s\n", new_order++, records[i].key, records[i].value);
     }
 
     fclose(outFile);
     free(records);
 }
+
+
+
